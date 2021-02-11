@@ -6,5 +6,10 @@ let
 in with nixpkgs;
 stdenv.mkDerivation {
   name = "nix-script";
-  buildInputs = [ niv.niv git haskellPackages.ghc haskellPackages.ormolu ];
+  buildInputs = [
+    niv.niv
+    git
+    (haskellPackages.ghcWithPackages (ps: [ ps.neat-interpolation ps.text ]))
+    haskellPackages.ormolu
+  ];
 }

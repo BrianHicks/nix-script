@@ -1,10 +1,17 @@
 #!/usr/bin/env runghc
 
+{-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE QuasiQuotes #-}
+
 import qualified Data.List as List
 import qualified Data.Maybe as Maybe
+import Data.Text (Text, pack)
+import qualified Data.Text.IO as TextIO
+import NeatInterpolation (text)
+import qualified System.Directory as Directory
 import qualified System.Environment as Environment
 import System.Exit (exitFailure)
-import System.FilePath.Posix (takeBaseName, takeDirectory, takeFileName)
+import qualified System.FilePath.Posix as FilePath
 import qualified System.Process as Process
 
 main :: IO ()
@@ -22,65 +29,70 @@ main = do
 
 printUsage :: IO ()
 printUsage = do
-  putStrLn "USAGE: nix-script path/to/script"
-  putStrLn ""
-  putStrLn "But really, you should just use this in a script's shebang, like so:"
-  putStrLn ""
-  putStrLn "    #!/usr/bin/env nix-script"
+  TextIO.putStrLn
+    [text|
+      USAGE: nix-script path/to/script
+
+      But really, you should just use this in a script's shebang, like so:
+
+          #!/usr/bin/env nix-script
+    |]
 
 buildAndRun :: FilePath -> IO ()
 buildAndRun target = do
   (derivationTemplate, niceName) <- getDerivationTemplateFor target
-  putStrLn derivationTemplate
+  TextIO.putStrLn derivationTemplate
 
-getDerivationTemplateFor :: FilePath -> IO (String, String)
+getDerivationTemplateFor :: FilePath -> IO (Text, Text)
 getDerivationTemplateFor target = do
-  let niceName = takeBaseName target
-  let dirName = takeDirectory target
-  let fileName = takeFileName target
+  let niceName = pack $ FilePath.takeBaseName target
+  dirName <- pack <$> Directory.makeAbsolute (FilePath.takeDirectory target)
+  let fileName = pack $ FilePath.takeFileName target
   source <- readFile target
   let sourceLines = lines source
   buildCommand <- getBuildCommand sourceLines
   buildInputs <- getBuildInputs sourceLines
   pure
-    ( "{ pkgs ? import <nixpkgs> { }, ... }: pkgs.stdenv.mkDerivation { name = \""
-        ++ niceName
-        ++ "\"; src = builtins.filterSource (path: _: baseNameOf path == \""
-        ++ fileName
-        ++ "\") ../"
-        ++ dirName
-        ++ "; buildInputs = with pkgs; ["
-        ++ buildInputs
-        ++ "]; buildPhase = ''OUT_FILE="
-        ++ niceName
-        ++ "; SCRIPT_FILE="
-        ++ fileName
-        ++ "; "
-        -- TODO: escape build command so strings don't mess it up
-        ++ buildCommand
-        ++ "''; installPhase = ''mkdir -p $out; mv "
-        ++ niceName
-        ++ " $out/"
-        ++ niceName
-        ++ "''; }",
+    ( [text|
+        { pkgs ? import <nixpkgs> { }, ... }:
+        pkgs.stdenv.mkDerivation {
+          name = "$niceName";
+          src = builtins.filterSource (path: _: path == "$dirName/$fileName") $dirName;
+
+          buildInputs = with pkgs; [ $buildInputs ];
+          buildPhase = ''
+            OUT_FILE=$niceName
+            SCRIPT_FILE=$fileName
+
+            # TODO: this should be escaped somehow so double single primes
+            # don't mess it up
+            $buildCommand
+          '';
+
+          installPhase = ''
+            mkdir -p $$out
+            mv $niceName $$out/$niceName
+          '';
+        }
+      |],
       niceName
     )
 
-getBuildCommand :: [String] -> IO String
+getBuildCommand :: [String] -> IO Text
 getBuildCommand sourceLines = do
   fromEnv <- Environment.lookupEnv "BUILD_COMMAND"
   case fromEnv of
-    Just command -> pure command
+    Just command -> pure $ pack command
     Nothing ->
       case Maybe.listToMaybe (filter (List.isPrefixOf "#!build ") sourceLines) of
-        Just line -> pure (List.drop 8 line)
+        Just line -> pure $ pack $ List.drop 8 line
         Nothing -> fail "I couldn't find a build statement. Either set BUILD_COMMAND or add a `#!build` line to your script."
 
-getBuildInputs :: [String] -> IO String
+getBuildInputs :: [String] -> IO Text
 getBuildInputs sourceLines = do
   fromEnv <- Environment.lookupEnv "BUILD_INPUTS"
   let fromSource = map (List.drop 15) $ filter (List.isPrefixOf "#!build-inputs ") sourceLines
-  pure $ List.intercalate " " $
+  pure $ pack $ List.intercalate " " $
     case fromEnv of
       Just stuff -> stuff : fromSource
       Nothing -> fromSource
