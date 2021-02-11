@@ -56,21 +56,21 @@ buildAndRun target = do
   -- rebuild, if necessary
   needToBuild <- not <$> existsAsValidSymlink cacheTarget
   if needToBuild
-    then build cacheTarget derivationTemplate
+    then build cacheTarget (FilePath.takeFileName target) derivationTemplate
     else pure ()
   -- run the thing
   TextIO.putStrLn derivationTemplate
 
-build :: FilePath -> Text -> IO ()
-build destination nixSource = do
+build :: FilePath -> FilePath -> Text -> IO ()
+build destination builtFile nixSource = do
   let dir = FilePath.takeDirectory destination
   Directory.createDirectoryIfMissing True dir
   TextIO.writeFile (dir </> "default.nix") nixSource
   outLines <- List.lines <$> Process.readProcess "nix-build" ["--no-out-link", dir] []
-  out <- case outLines of
+  built <- case outLines of
     [] -> fail "nix-build did not give me a store path. How weird!"
     first : _ -> pure first
-  print out
+  Directory.createFileLink (built </> builtFile) destination
 
 existsAsValidSymlink :: FilePath -> IO Bool
 existsAsValidSymlink target = do
