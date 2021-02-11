@@ -27,11 +27,8 @@ main = do
     [] -> do
       printUsage
       exitFailure
-    [target] ->
-      buildAndRun target
-    _many -> do
-      printUsage
-      exitFailure
+    target : args ->
+      buildAndRun target args
 
 printUsage :: IO ()
 printUsage = do
@@ -45,8 +42,8 @@ printUsage = do
           #!/usr/bin/env nix-script
     |]
 
-buildAndRun :: FilePath -> IO ()
-buildAndRun target = do
+buildAndRun :: FilePath -> [String] -> IO ()
+buildAndRun target args = do
   source <- readFileText target
   derivationTemplate <- getDerivationTemplateFor target source
   -- what's our target?
@@ -59,7 +56,7 @@ buildAndRun target = do
     then build cacheTarget (FilePath.takeFileName target) derivationTemplate
     else pure ()
   -- run the thing
-  Process.callProcess cacheTarget []
+  Process.callProcess cacheTarget args
 
 build :: FilePath -> FilePath -> Text -> IO ()
 build destination builtFile nixSource = do
