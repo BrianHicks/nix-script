@@ -6,6 +6,7 @@
 
 import qualified Crypto.Hash.SHA256 as SHA256
 import qualified Data.ByteString.Base16 as Base16
+import qualified Data.ByteString.UTF8
 import qualified Data.List as List
 import qualified Data.Maybe as Maybe
 import qualified Data.Text as Text
@@ -15,6 +16,7 @@ import Relude
 import qualified System.Directory as Directory
 import qualified System.Environment as Environment
 import qualified System.FilePath.Posix as FilePath
+import System.FilePath.Posix ((</>))
 import qualified System.Process as Process
 
 main :: IO ()
@@ -49,6 +51,8 @@ buildAndRun target = do
   cacheDir <- getCacheDir
   print cacheDir
   let hash = Base16.encode $ SHA256.finalize $ SHA256.updates SHA256.init [encodeUtf8 source, encodeUtf8 derivationTemplate]
+  let cacheKey = cacheDir </> (FilePath.takeFileName target ++ "-" ++ Data.ByteString.UTF8.toString hash)
+  print cacheKey
   -- if the cached version doesn't exist or is a broken symlink:
   --   make a temporary directory
   --   build

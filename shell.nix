@@ -15,6 +15,7 @@ stdenv.mkDerivation {
       ps.neat-interpolation
       ps.relude
       ps.text
+      ps.utf8-string
     ]))
     haskellPackages.ormolu
   ];
