@@ -2,15 +2,16 @@
 
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE QuasiQuotes #-}
+{-# LANGUAGE NoImplicitPrelude #-}
 
 import qualified Data.List as List
 import qualified Data.Maybe as Maybe
-import Data.Text (Text, pack)
+import qualified Data.Text as Text
 import qualified Data.Text.IO as TextIO
 import NeatInterpolation (text)
+import Relude
 import qualified System.Directory as Directory
 import qualified System.Environment as Environment
-import System.Exit (exitFailure)
 import qualified System.FilePath.Posix as FilePath
 import qualified System.Process as Process
 
@@ -45,9 +46,9 @@ buildAndRun target = do
 
 getDerivationTemplateFor :: FilePath -> IO Text
 getDerivationTemplateFor target = do
-  dirName <- pack <$> Directory.makeAbsolute (FilePath.takeDirectory target)
-  let fileName = pack $ FilePath.takeFileName target
-  source <- readFile target
+  dirName <- Text.pack <$> Directory.makeAbsolute (FilePath.takeDirectory target)
+  let fileName = Text.pack $ FilePath.takeFileName target
+  source <- readFileText target
   let sourceLines = lines source
   buildCommand <- getBuildCommand sourceLines
   buildInputs <- getBuildInputs sourceLines
@@ -84,30 +85,25 @@ getDerivationTemplateFor target = do
       |]
     )
 
-getBuildCommand :: [String] -> IO Text
+getBuildCommand :: [Text] -> IO Text
 getBuildCommand sourceLines = do
   fromEnv <- Environment.lookupEnv "BUILD_COMMAND"
   case fromEnv of
-    Just command -> pure $ pack command
+    Just command -> pure $ Text.pack command
     Nothing ->
-      case Maybe.listToMaybe (filter (List.isPrefixOf "#!build ") sourceLines) of
-        Just line -> pure $ pack $ List.drop 8 line
-        Nothing -> fail "I couldn't find a build statement. Either set BUILD_COMMAND or add a `#!build` line to your script."
+      case catMaybes $ map (Text.stripPrefix "#!build ") sourceLines of
+        [] -> fail "I couldn't find a build statement. Either set BUILD_COMMAND or add a `#!build` line to your script."
+        [only] -> pure only
+        many_ -> fail "I found many `#!build` statements in the source, but I can only handle one!"
 
-getBuildInputs :: [String] -> IO Text
+getBuildInputs :: [Text] -> IO Text
 getBuildInputs sourceLines = do
   fromEnv <- Environment.lookupEnv "BUILD_INPUTS"
-  let fromSource = map (List.drop 14) $ filter (List.isPrefixOf "#!buildInputs ") sourceLines
-  pure $ pack $ List.intercalate " " $
-    case fromEnv of
-      Just stuff -> stuff : fromSource
-      Nothing -> fromSource
+  let fromSource = map (Text.stripPrefix "#!buildInputs ") sourceLines
+  pure $ Text.intercalate " " $ catMaybes $ (fmap Text.pack fromEnv : fromSource)
 
-getRuntimeInputs :: [String] -> IO Text
+getRuntimeInputs :: [Text] -> IO Text
 getRuntimeInputs sourceLines = do
   fromEnv <- Environment.lookupEnv "RUNTIME_INPUTS"
-  let fromSource = map (List.drop 16) $ filter (List.isPrefixOf "#!runtimeInputs ") sourceLines
-  pure $ pack $ List.intercalate " " $
-    case fromEnv of
-      Just stuff -> stuff : fromSource
-      Nothing -> fromSource
+  let fromSource = map (Text.stripPrefix "#!runtimeInputs ") sourceLines
+  pure $ Text.intercalate " " $ catMaybes $ (fmap Text.pack fromEnv : fromSource)

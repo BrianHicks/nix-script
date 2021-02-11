@@ -9,7 +9,8 @@ stdenv.mkDerivation {
   buildInputs = [
     niv.niv
     git
-    (haskellPackages.ghcWithPackages (ps: [ ps.neat-interpolation ps.text ]))
+    (haskellPackages.ghcWithPackages
+      (ps: [ ps.relude ps.text ps.neat-interpolation ]))
     haskellPackages.ormolu
   ];
 }
