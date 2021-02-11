@@ -47,19 +47,32 @@ buildAndRun :: FilePath -> IO ()
 buildAndRun target = do
   source <- readFileText target
   derivationTemplate <- getDerivationTemplateFor target source
-  -- do we need to rebuild?
+  -- what's our target?
   cacheDir <- getCacheDir
   let hash = Base16.encode $ SHA256.finalize $ SHA256.updates SHA256.init [encodeUtf8 source, encodeUtf8 derivationTemplate]
   let cacheTarget = cacheDir </> (FilePath.takeFileName target ++ "-" ++ Data.ByteString.UTF8.toString hash)
+  -- rebuild, if necessary
   needToBuild <- not <$> existsAsValidSymlink cacheTarget
-  print needToBuild
-  print cacheTarget
+  if needToBuild
+    then build cacheTarget derivationTemplate
+    else pure ()
   -- if the cached version doesn't exist or is a broken symlink:
   --   make a temporary directory
   --   build
   --   make a symlink to the result/bin/thing
   -- run the thing
   TextIO.putStrLn derivationTemplate
+
+build :: FilePath -> Text -> IO ()
+build destination nixSource = do
+  let dir = FilePath.takeDirectory destination
+  Directory.createDirectoryIfMissing True dir
+  TextIO.writeFile (dir </> "default.nix") nixSource
+  outLines <- List.lines <$> Process.readProcess "nix-build" ["--no-out-link", dir] []
+  out <- case outLines of
+    [] -> fail "nix-build did not give me a store path. How weird!"
+    first : _ -> pure first
+  print out
 
 existsAsValidSymlink :: FilePath -> IO Bool
 existsAsValidSymlink target = do
