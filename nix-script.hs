@@ -63,7 +63,7 @@ getDerivationTemplateFor target = do
             OUT_FILE=$fileName
             SCRIPT_FILE=$fileName
 
-            # TODO: this should be escaped somehow so double single primes
+            # TODO: this should be escaped somehow so two single primes
             # don't mess it up
             $buildCommand
           '';
