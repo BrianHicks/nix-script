@@ -46,14 +46,19 @@ buildAndRun target = do
   source <- readFileText target
   derivationTemplate <- getDerivationTemplateFor target source
   -- do we need to rebuild?
+  cacheDir <- getCacheDir
+  print cacheDir
   let hash = Base16.encode $ SHA256.finalize $ SHA256.updates SHA256.init [encodeUtf8 source, encodeUtf8 derivationTemplate]
-  print hash
   -- if the cached version doesn't exist or is a broken symlink:
   --   make a temporary directory
   --   build
   --   make a symlink to the result/bin/thing
   -- run the thing
   TextIO.putStrLn derivationTemplate
+
+getCacheDir :: IO FilePath
+getCacheDir =
+  Maybe.fromMaybe ".nix-script-cache" <$> Environment.lookupEnv "NIX_SCRIPT_CACHE_PATH"
 
 getDerivationTemplateFor :: FilePath -> Text -> IO Text
 getDerivationTemplateFor target source = do
