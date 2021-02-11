@@ -51,6 +51,11 @@ getDerivationTemplateFor target = do
   let sourceLines = lines source
   buildCommand <- getBuildCommand sourceLines
   buildInputs <- getBuildInputs sourceLines
+  runtimeInputs <- getRuntimeInputs sourceLines
+  let callWrapProgram =
+        if runtimeInputs /= ""
+          then [text|wrapProgram $$out/$fileName --prefix PATH : $${with pkgs; pkgs.lib.makeBinPath [ $runtimeInputs ]}|]
+          else "true"
   pure
     ( [text|
         { pkgs ? import <nixpkgs> { }, ... }:
@@ -58,8 +63,9 @@ getDerivationTemplateFor target = do
           name = "$fileName";
           src = builtins.filterSource (path: _: path == "$dirName/$fileName") $dirName;
 
-          buildInputs = with pkgs; [ $buildInputs ];
+          buildInputs = with pkgs; [ makeWrapper $buildInputs ];
           buildPhase = ''
+            # nix-script cache buster: 0
             OUT_FILE=$fileName
             SCRIPT_FILE=$fileName
 
@@ -71,6 +77,8 @@ getDerivationTemplateFor target = do
           installPhase = ''
             mkdir -p $$out
             mv $fileName $$out/$fileName
+
+            $callWrapProgram
           '';
         }
       |]
@@ -90,6 +98,15 @@ getBuildInputs :: [String] -> IO Text
 getBuildInputs sourceLines = do
   fromEnv <- Environment.lookupEnv "BUILD_INPUTS"
   let fromSource = map (List.drop 15) $ filter (List.isPrefixOf "#!build-inputs ") sourceLines
+  pure $ pack $ List.intercalate " " $
+    case fromEnv of
+      Just stuff -> stuff : fromSource
+      Nothing -> fromSource
+
+getRuntimeInputs :: [String] -> IO Text
+getRuntimeInputs sourceLines = do
+  fromEnv <- Environment.lookupEnv "RUNTIME_INPUTS"
+  let fromSource = map (List.drop 17) $ filter (List.isPrefixOf "#!runtime-inputs ") sourceLines
   pure $ pack $ List.intercalate " " $
     case fromEnv of
       Just stuff -> stuff : fromSource
