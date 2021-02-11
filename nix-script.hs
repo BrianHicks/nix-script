@@ -59,7 +59,7 @@ buildAndRun target = do
     then build cacheTarget (FilePath.takeFileName target) derivationTemplate
     else pure ()
   -- run the thing
-  TextIO.putStrLn derivationTemplate
+  Process.callProcess cacheTarget []
 
 build :: FilePath -> FilePath -> Text -> IO ()
 build destination builtFile nixSource = do
