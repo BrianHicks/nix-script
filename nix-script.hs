@@ -97,7 +97,7 @@ getBuildCommand sourceLines = do
 getBuildInputs :: [String] -> IO Text
 getBuildInputs sourceLines = do
   fromEnv <- Environment.lookupEnv "BUILD_INPUTS"
-  let fromSource = map (List.drop 15) $ filter (List.isPrefixOf "#!build-inputs ") sourceLines
+  let fromSource = map (List.drop 14) $ filter (List.isPrefixOf "#!buildInputs ") sourceLines
   pure $ pack $ List.intercalate " " $
     case fromEnv of
       Just stuff -> stuff : fromSource
@@ -106,7 +106,7 @@ getBuildInputs sourceLines = do
 getRuntimeInputs :: [String] -> IO Text
 getRuntimeInputs sourceLines = do
   fromEnv <- Environment.lookupEnv "RUNTIME_INPUTS"
-  let fromSource = map (List.drop 17) $ filter (List.isPrefixOf "#!runtime-inputs ") sourceLines
+  let fromSource = map (List.drop 16) $ filter (List.isPrefixOf "#!runtimeInputs ") sourceLines
   pure $ pack $ List.intercalate " " $
     case fromEnv of
       Just stuff -> stuff : fromSource
