@@ -49,16 +49,30 @@ buildAndRun target = do
   derivationTemplate <- getDerivationTemplateFor target source
   -- do we need to rebuild?
   cacheDir <- getCacheDir
-  print cacheDir
   let hash = Base16.encode $ SHA256.finalize $ SHA256.updates SHA256.init [encodeUtf8 source, encodeUtf8 derivationTemplate]
-  let cacheKey = cacheDir </> (FilePath.takeFileName target ++ "-" ++ Data.ByteString.UTF8.toString hash)
-  print cacheKey
+  let cacheTarget = cacheDir </> (FilePath.takeFileName target ++ "-" ++ Data.ByteString.UTF8.toString hash)
+  needToBuild <- not <$> existsAsValidSymlink cacheTarget
+  print needToBuild
+  print cacheTarget
   -- if the cached version doesn't exist or is a broken symlink:
   --   make a temporary directory
   --   build
   --   make a symlink to the result/bin/thing
   -- run the thing
   TextIO.putStrLn derivationTemplate
+
+existsAsValidSymlink :: FilePath -> IO Bool
+existsAsValidSymlink target = do
+  exists <- Directory.doesFileExist target
+  if not exists
+    then pure False
+    else do
+      isSymlink <- Directory.pathIsSymbolicLink target
+      if not isSymlink
+        then pure False
+        else do
+          linkTarget <- Directory.getSymbolicLinkTarget target
+          Directory.doesFileExist linkTarget
 
 getCacheDir :: IO FilePath
 getCacheDir =
