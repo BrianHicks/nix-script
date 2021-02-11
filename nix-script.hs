@@ -56,10 +56,6 @@ buildAndRun target = do
   if needToBuild
     then build cacheTarget derivationTemplate
     else pure ()
-  -- if the cached version doesn't exist or is a broken symlink:
-  --   make a temporary directory
-  --   build
-  --   make a symlink to the result/bin/thing
   -- run the thing
   TextIO.putStrLn derivationTemplate
 
