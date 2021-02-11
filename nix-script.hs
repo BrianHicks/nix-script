@@ -17,6 +17,7 @@ import qualified System.Directory as Directory
 import qualified System.Environment as Environment
 import qualified System.FilePath.Posix as FilePath
 import System.FilePath.Posix ((</>))
+import System.IO (stderr)
 import qualified System.Process as Process
 
 main :: IO ()
@@ -34,7 +35,8 @@ main = do
 
 printUsage :: IO ()
 printUsage = do
-  TextIO.putStrLn
+  TextIO.hPutStrLn
+    stderr
     [text|
       USAGE: nix-script path/to/script
 
