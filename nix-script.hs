@@ -40,12 +40,11 @@ printUsage = do
 
 buildAndRun :: FilePath -> IO ()
 buildAndRun target = do
-  (derivationTemplate, niceName) <- getDerivationTemplateFor target
+  derivationTemplate <- getDerivationTemplateFor target
   TextIO.putStrLn derivationTemplate
 
-getDerivationTemplateFor :: FilePath -> IO (Text, Text)
+getDerivationTemplateFor :: FilePath -> IO Text
 getDerivationTemplateFor target = do
-  let niceName = pack $ FilePath.takeBaseName target
   dirName <- pack <$> Directory.makeAbsolute (FilePath.takeDirectory target)
   let fileName = pack $ FilePath.takeFileName target
   source <- readFile target
@@ -56,12 +55,12 @@ getDerivationTemplateFor target = do
     ( [text|
         { pkgs ? import <nixpkgs> { }, ... }:
         pkgs.stdenv.mkDerivation {
-          name = "$niceName";
+          name = "$fileName";
           src = builtins.filterSource (path: _: path == "$dirName/$fileName") $dirName;
 
           buildInputs = with pkgs; [ $buildInputs ];
           buildPhase = ''
-            OUT_FILE=$niceName
+            OUT_FILE=$fileName
             SCRIPT_FILE=$fileName
 
             # TODO: this should be escaped somehow so double single primes
@@ -71,11 +70,10 @@ getDerivationTemplateFor target = do
 
           installPhase = ''
             mkdir -p $$out
-            mv $niceName $$out/$niceName
+            mv $fileName $$out/$fileName
           '';
         }
-      |],
-      niceName
+      |]
     )
 
 getBuildCommand :: [String] -> IO Text
