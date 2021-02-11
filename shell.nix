@@ -4,19 +4,7 @@ let
   nixpkgs = import sources.nixpkgs { };
   niv = import sources.niv { };
 in with nixpkgs;
-stdenv.mkDerivation {
-  name = "nix-script";
-  buildInputs = [
-    niv.niv
-    git
-    (haskellPackages.ghcWithPackages (ps: [
-      ps.base16-bytestring
-      ps.cryptohash-sha256
-      ps.neat-interpolation
-      ps.relude
-      ps.text
-      ps.utf8-string
-    ]))
-    haskellPackages.ormolu
-  ];
+pkgs.mkShell {
+  inputsFrom = [ (haskellPackages.callCabal2nix "nix-script" ./. { }).env ];
+  buildInputs = [ niv.niv git cabal-install haskellPackages.ormolu ];
 }
