@@ -4,6 +4,8 @@
 {-# LANGUAGE QuasiQuotes #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 
+import qualified Crypto.Hash.SHA256 as SHA256
+import qualified Data.ByteString.Base16 as Base16
 import qualified Data.List as List
 import qualified Data.Maybe as Maybe
 import qualified Data.Text as Text
@@ -41,8 +43,11 @@ printUsage = do
 
 buildAndRun :: FilePath -> IO ()
 buildAndRun target = do
-  derivationTemplate <- getDerivationTemplateFor target
-  -- hash the source & inputs to see if anything changed
+  source <- readFileText target
+  derivationTemplate <- getDerivationTemplateFor target source
+  -- do we need to rebuild?
+  let hash = Base16.encode $ SHA256.finalize $ SHA256.updates SHA256.init [encodeUtf8 source, encodeUtf8 derivationTemplate]
+  print hash
   -- if the cached version doesn't exist or is a broken symlink:
   --   make a temporary directory
   --   build
@@ -50,11 +55,10 @@ buildAndRun target = do
   -- run the thing
   TextIO.putStrLn derivationTemplate
 
-getDerivationTemplateFor :: FilePath -> IO Text
-getDerivationTemplateFor target = do
+getDerivationTemplateFor :: FilePath -> Text -> IO Text
+getDerivationTemplateFor target source = do
   dirName <- Text.pack <$> Directory.makeAbsolute (FilePath.takeDirectory target)
   let fileName = Text.pack $ FilePath.takeFileName target
-  source <- readFileText target
   let sourceLines = lines source
   buildCommand <- getBuildCommand sourceLines
   buildInputs <- getBuildInputs sourceLines
@@ -72,7 +76,6 @@ getDerivationTemplateFor target = do
 
           buildInputs = with pkgs; [ makeWrapper $buildInputs ];
           buildPhase = ''
-            # nix-script cache buster: 0
             OUT_FILE=$fileName
             SCRIPT_FILE=$fileName
 
