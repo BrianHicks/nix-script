@@ -42,6 +42,12 @@ printUsage = do
 buildAndRun :: FilePath -> IO ()
 buildAndRun target = do
   derivationTemplate <- getDerivationTemplateFor target
+  -- hash the source & inputs to see if anything changed
+  -- if the cached version doesn't exist or is a broken symlink:
+  --   make a temporary directory
+  --   build
+  --   make a symlink to the result/bin/thing
+  -- run the thing
   TextIO.putStrLn derivationTemplate
 
 getDerivationTemplateFor :: FilePath -> IO Text
