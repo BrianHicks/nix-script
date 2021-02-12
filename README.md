@@ -73,7 +73,13 @@ main :: IO ()
 main = Data.Text.IO.putStrLn "Hello, World!"
 ```
 
-After the initial run (to compile, optimized now since we know we won't be compiling on every run) our script now runs in something like 30ms.
+The first time you run that, it'll compile the script to a binary and run it.
+That takes about two seconds on my machine.
+
+The second time you run it, we'll just use the compiled binary.
+That takes 30ms or so for me!
+Big improvement!
+
 And, in addition to the speed boost, we can depend on any package in the nix ecosystem!
 For example, here's how you'd add `jq`:
 
