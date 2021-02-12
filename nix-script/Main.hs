@@ -47,7 +47,15 @@ buildAndRun target args = do
   derivationTemplate <- getDerivationTemplateFor target source
   -- what's our target?
   cacheDir <- getCacheDir
-  let hash = Base16.encode $ SHA256.finalize $ SHA256.updates SHA256.init [encodeUtf8 source, encodeUtf8 derivationTemplate]
+  nixPath <- fromMaybe "" <$> Environment.lookupEnv "NIX_PATH"
+  let hash =
+        Base16.encode $ SHA256.finalize $
+          SHA256.updates
+            SHA256.init
+            [ encodeUtf8 source,
+              encodeUtf8 derivationTemplate,
+              encodeUtf8 nixPath
+            ]
   let cacheTarget = cacheDir </> (FilePath.takeFileName target ++ "-" ++ Data.ByteString.UTF8.toString hash)
   -- rebuild, if necessary
   needToBuild <- not <$> existsAsValidSymlink cacheTarget
