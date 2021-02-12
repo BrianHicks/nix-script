@@ -4,7 +4,7 @@ cabal-version:       2.2
 -- http://haskell.org/cabal/users-guide/
 
 name:                nix-script
-version:             0.1.0.0
+version:             1.0.0.0
 -- synopsis:
 -- description:
 -- bug-reports:
