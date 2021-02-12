@@ -1,5 +1,5 @@
 #!nix-script-haskell
-#!haskellInputs text
+#!haskellPackages text
 
 {-# LANGUAGE OverloadedStrings #-}
 
