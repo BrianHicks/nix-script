@@ -30,14 +30,15 @@ main = do
 
 printUsage :: IO ()
 printUsage = do
+  name <- Text.pack <$> Environment.getProgName
   TextIO.hPutStrLn
     stderr
     [text|
-      USAGE: nix-script path/to/script
+      USAGE: $name path/to/script
 
       But really, you should just use this in a script's shebang, like so:
 
-          #!/usr/bin/env nix-script
+          #!/usr/bin/env $name
     |]
 
 buildAndRun :: FilePath -> [String] -> IO ()
