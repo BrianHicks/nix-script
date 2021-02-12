@@ -91,7 +91,7 @@ main = callProcess "jq" ["--help"]
 
 But it's really not that ergonomic to have to write `#!build` lines, and I always forget how to call `pkgs.haskellPackages.ghcWithPackages`, so there's also a wrapper script called `nix-script-haskell` that makes this more ergonomic:
 
-```
+```haskell
 #!/usr/bin/env nix-script-haskell
 #!haskellPackages text
 
@@ -148,7 +148,7 @@ This is quicker than using `nix-shell` shebangs because the runtime environment 
 In addition to the regular `nix-script` options, this lets you specify `#!haskellPackages`, which should be a space-separated list of Haskell packages (you can get a list of available names by running `nix-env -qaPA nixpkgs.haskellPackages`.)
 For example:
 
-```
+```haskell
 #!/usr/bin/env nix-script-haskell
 #!haskellPackages text
 
