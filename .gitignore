@@ -1,3 +1,2 @@
 /.nix-script-cache
-/nix-script/dist-newstyle
-/result
+result
