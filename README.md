@@ -136,6 +136,12 @@ You can also control these options via environment variables in wrapper scripts 
 
 `nix-script` also lets your compiled script know where it came from by setting the `SCRIPT_FILE` environment variable to what you would have gotten in `$0` if it was a shell script.
 
+#### Shell Mode
+
+Building a new version for every change can get a little tiresome while developing.
+If you want a quicker feedback loop, you can invoke `nix-script` and friends like `nix-script --shell path/to/script` to drop into a development shell with your build- and runtime dependencies.
+This won't run your build command, but it will let you run it yourself, play around in repls, etc.
+
 ### `nix-script-bash`
 
 `nix-script-bash` exists to let you specify exact versions of your dependencies via Nix.

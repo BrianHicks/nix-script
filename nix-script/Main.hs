@@ -25,6 +25,8 @@ main = do
     [] -> do
       printUsage
       exitFailure
+    ["--shell", target] ->
+      enterShell target
     target : args ->
       buildAndRun target args
 
@@ -40,6 +42,24 @@ printUsage = do
 
           #!/usr/bin/env $name
     |]
+
+enterShell :: FilePath -> IO ()
+enterShell target = do
+  source <- readFileText target
+  let sourceLines = lines source
+  buildInputs <- getBuildInputs sourceLines
+  runtimeInputs <- getRuntimeInputs sourceLines
+  args <-
+    -- TODO: this is a super awkward way to do this! There are probably many better.
+    case (buildInputs, runtimeInputs) of
+      ("", "") -> do
+        let targetForProblem = Text.pack target
+        TextIO.hPutStrLn stderr [text|$targetForProblem doesn't have any build-time or runtime dependencies. Nothing for me to do!|]
+        exitFailure
+      ("", runtime) -> pure ["-p", Text.unpack runtime]
+      (build, "") -> pure ["-p", Text.unpack build]
+      (build, runtime) -> pure ["-p", Text.unpack build, "-p", Text.unpack runtime]
+  Process.callProcess "nix-shell" args
 
 buildAndRun :: FilePath -> [String] -> IO ()
 buildAndRun target args = do
