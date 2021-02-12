@@ -79,7 +79,7 @@ The second time you run it, we'll just use the compiled binary.
 That takes 30ms or so for me!
 Big improvement!
 
-But it's really not that fun to have to figure out that `#!build` line every time, and I always forget how to call `pkgs.haskellPackages.ghcWithPackages` correctly... so there's also a wrapper script called `nix-script-haskell` that makes this more nicer:
+But it's really not that fun to have to figure out that `#!build` line every time, and I always forget how to call `pkgs.haskellPackages.ghcWithPackages` correctly... so there's also a wrapper script called `nix-script-haskell` that makes this nicer:
 
 ```haskell
 #!/usr/bin/env nix-script-haskell
