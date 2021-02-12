@@ -54,6 +54,7 @@ buildAndRun target args = do
     then build cacheTarget (FilePath.takeFileName target) derivationTemplate
     else pure ()
   -- run the thing
+  Environment.setEnv "SCRIPT_FILE" target
   Process.callProcess cacheTarget args
 
 build :: FilePath -> FilePath -> Text -> IO ()

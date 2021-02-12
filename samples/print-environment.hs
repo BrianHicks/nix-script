@@ -2,7 +2,7 @@
 #!buildInputs haskellPackages.ghc
 #!build ghc -O -o $OUT_FILE $SCRIPT_FILE
 
-import System.Environment (getArgs, getEnvironment)
+import System.Environment (getArgs, lookupEnv)
 
 main :: IO ()
 main = do
@@ -10,4 +10,4 @@ main = do
   getArgs >>= print
   putStrLn ""
   putStrLn "And this environment:"
-  getEnvironment >>= print
+  lookupEnv "SCRIPT_FILE" >>= print
