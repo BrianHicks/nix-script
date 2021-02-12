@@ -105,7 +105,7 @@ getCacheDir =
 
 getDerivationTemplateFor :: FilePath -> Text -> IO Text
 getDerivationTemplateFor target source = do
-  dirName <- toText <$> Directory.makeAbsolute (FilePath.takeDirectory target)
+  dirName <- toText <$> Directory.canonicalizePath (FilePath.takeDirectory target)
   let fileName = toText $ FilePath.takeFileName target
   let sourceLines = lines source
   buildCommand <- getBuildCommand sourceLines
