@@ -3,8 +3,8 @@ set -euo pipefail
 
 SOURCE="${1:-}"
 if test -z "$SOURCE"; then
-  echo "USAGE: nix-haskell-script path/to/script.hs"
-  exit 1
+  # defer to nix-script to print the error here
+  exec nix-script
 fi
 
 # make it easier to pass args later

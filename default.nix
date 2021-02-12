@@ -5,24 +5,24 @@ in rec {
   nix-script = pkgs.haskellPackages.callCabal2nix "nix-script"
     (gitignore.gitignoreSource ./.) { };
 
-  nix-haskell-script = pkgs.stdenv.mkDerivation {
-    name = "nix-haskell-script";
+  nix-script-haskell = pkgs.stdenv.mkDerivation {
+    name = "nix-script-haskell";
 
-    src = ./nix-haskell-script;
+    src = ./nix-script-haskell;
     buildInputs = [ pkgs.makeWrapper ];
     buildPhase = "true";
 
     installPhase = ''
       mkdir -p $out
-      mv nix-haskell-script.sh $out/nix-haskell-script
+      mv nix-script-haskell.sh $out/nix-script-haskell
 
-      wrapProgram $out/nix-haskell-script \
+      wrapProgram $out/nix-script-haskell \
         --prefix PATH : ${pkgs.lib.makeBinPath [ nix-script ]}
     '';
   };
 
-  nix-bash-script = pkgs.stdenv.mkDerivation {
-    name = "nix-bash-script";
+  nix-script-bash = pkgs.stdenv.mkDerivation {
+    name = "nix-script-bash";
 
     buildInputs = [ pkgs.makeWrapper ];
     unpackPhase = "true";

@@ -1,4 +1,4 @@
-#!nix-haskell-script
+#!nix-script-haskell
 #!haskellInputs text
 
 {-# LANGUAGE OverloadedStrings #-}
