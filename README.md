@@ -7,7 +7,7 @@
 You might have guessed this already, but you can install this package with `nix`:
 
 ```
-nix-env -if https://github.com/BrianHicks/nix-script/archive/main.zip
+nix-env -if https://github.com/BrianHicks/nix-script/archive/main.tar.gz
 ```
 
 You probably should use [`niv`](https://github.com/nmattia/niv) or similar, though!
