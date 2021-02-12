@@ -15,18 +15,18 @@ jobs:
       #     name: nix-script
       #     authToken: '${{ secrets.CACHIX_AUTH_TOKEN }}'
       #     extraPullNames: niv
-      - run: nix-build
-      - run: |
-          nix-env -if .
 
-          # core tests
-          (
-            cd nix-script
-            samples/test-has-script-file.hs
-            samples/test-receives-arguments.hs a b c
-            samples/test-has-runtime-input.hs
-          )
+      - run: nix-env -if .
 
+      - name: core tests
+        run: |
+          cd nix-script
+          samples/test-has-script-file.hs
+          samples/test-receives-arguments.hs a b c
+          samples/test-has-runtime-input.hs
+
+      - name: cleanup
+        run: |
           # clean up so we don't push test paths to cachix
           rm -rf .nix-script-cache
           nix-collect-garbage -d
