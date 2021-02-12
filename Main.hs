@@ -94,6 +94,11 @@ getDerivationTemplateFor target source = do
   buildCommand <- getBuildCommand sourceLines
   buildInputs <- getBuildInputs sourceLines
   runtimeInputs <- getRuntimeInputs sourceLines
+  interpreter <- getInterpreter sourceLines
+  let swapInterpreter =
+        if interpreter /= ""
+          then [text|sed -i "1c#!/usr/bin/env $interpreter" $$SCRIPT_FILE|]
+          else "true"
   let callWrapProgram =
         if runtimeInputs /= ""
           then [text|wrapProgram $$out/$fileName --prefix PATH : $${with pkgs; pkgs.lib.makeBinPath [ $runtimeInputs ]}|]
@@ -109,6 +114,8 @@ getDerivationTemplateFor target source = do
           buildPhase = ''
             OUT_FILE=$fileName
             SCRIPT_FILE=$fileName
+
+            $swapInterpreter
 
             # TODO: this should be escaped somehow so two single primes
             # don't mess it up
@@ -134,7 +141,7 @@ getBuildCommand sourceLines = do
       case catMaybes $ map (Text.stripPrefix "#!build ") sourceLines of
         [] -> fail "I couldn't find a build statement. Either set BUILD_COMMAND or add a `#!build` line to your script."
         [only] -> pure only
-        many_ -> fail "I found many `#!build` statements in the source, but I can only handle one!"
+        many_ -> fail "I found more than one `#!build` statements in the source, but I can only handle one!"
 
 getBuildInputs :: [Text] -> IO Text
 getBuildInputs sourceLines = do
@@ -147,3 +154,14 @@ getRuntimeInputs sourceLines = do
   fromEnv <- Environment.lookupEnv "RUNTIME_INPUTS"
   let fromSource = map (Text.stripPrefix "#!runtimeInputs ") sourceLines
   pure $ Text.intercalate " " $ catMaybes $ (fmap Text.pack fromEnv : fromSource)
+
+getInterpreter :: [Text] -> IO Text
+getInterpreter sourceLines = do
+  fromEnv <- Environment.lookupEnv "INTERPETER"
+  case fromEnv of
+    Just interpreter -> pure $ Text.pack interpreter
+    Nothing ->
+      case catMaybes $ map (Text.stripPrefix "#!interpreter ") sourceLines of
+        [] -> pure ""
+        [only] -> pure only
+        many_ -> fail "I found more than one `#!interpreter` statements in the source, but I can only handle one!"

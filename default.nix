@@ -20,4 +20,21 @@ in rec {
         --prefix PATH : ${pkgs.lib.makeBinPath [ nix-script ]}
     '';
   };
+
+  nix-bash-script = pkgs.stdenv.mkDerivation {
+    name = "nix-bash-script";
+
+    buildInputs = [ pkgs.makeWrapper ];
+    unpackPhase = "true";
+    buildPhase = "true";
+
+    installPhase = ''
+      mkdir -p $out
+
+      makeWrapper ${nix-script}/bin/nix-script $out/bin/nix-script-bash \
+        --argv0 nix-script-bash \
+        --set BUILD_COMMAND 'chmod +x $SCRIPT_FILE' \
+        --set INTERPETER bash
+    '';
+  };
 }
