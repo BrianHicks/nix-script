@@ -177,7 +177,7 @@ main :: IO ()
 main = Data.Text.IO.putStrLn "Hello, World!"
 ```
 
-Unlike other options, `#!haskellPackages` is not loaded from the environment.
+Unlike other shebang options, `#!haskellPackages` does not have an equivalent setting in the environment.
 
 ## Controlling `nixpkgs` version
 
