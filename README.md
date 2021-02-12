@@ -134,6 +134,8 @@ You can also control these options via environment variables in wrapper scripts 
 | `#!runtimeInputs` | `RUNTIME_INPUTS`     |
 | `#!interpreter`   | `INTERPRETER`        |
 
+`nix-script` also lets your compiled script know where it came from by setting the `SCRIPT_FILE` environment variable to what you would have gotten in `$0` if it was a shell script.
+
 ### `nix-script-bash`
 
 `nix-script-bash` exists to let you specify exact versions of your dependencies via Nix.
