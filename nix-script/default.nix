@@ -7,14 +7,22 @@ let
 in pkgs.stdenv.mkDerivation {
   name = "nix-script";
 
-  unpackPhase = "true";
-  buildPhase = "true";
+  src = gitignore.gitignoreSource ./.;
+
   buildInputs = [ pkgs.makeWrapper ];
+  buildPhase = "true";
+
+  doCheck = true;
+  checkInputs = [ pkgs.haskellPackages.hlint ];
+  checkPhase = ''
+    hlint .
+  '';
 
   installPhase = ''
     mkdir -p $out/bin
 
     makeWrapper ${nix-script}/bin/nix-script $out/bin/nix-script \
-      --set NIX_PATH nixpkgs=${pinnedPkgs}
+      --set NIX_PATH nixpkgs=${pinnedPkgs} \
+      --prefix PATH : ${pkgs.lib.makeBinPath [ pkgs.nix ]}
   '';
 }
