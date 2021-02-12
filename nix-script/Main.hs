@@ -6,6 +6,7 @@ import qualified Data.Text.IO as TextIO
 import NeatInterpolation (text)
 import qualified System.Directory as Directory
 import qualified System.Environment as Environment
+import qualified System.Exit as Exit
 import System.FilePath.Posix ((</>))
 import qualified System.FilePath.Posix as FilePath
 import qualified System.Process as Process
@@ -74,7 +75,7 @@ buildAndRun target args = do
     else pass
   -- run the thing
   Environment.setEnv "SCRIPT_FILE" target
-  Process.callProcess cacheTarget args
+  Process.spawnProcess cacheTarget args >>= Process.waitForProcess >>= Exit.exitWith
 
 build :: FilePath -> FilePath -> Text -> IO ()
 build destination builtFile nixSource = do
