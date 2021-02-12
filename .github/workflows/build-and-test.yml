@@ -18,12 +18,18 @@ jobs:
 
       - run: nix-env -if .
 
-      - name: core tests
+      - name: nix-script core tests
         run: |
           cd nix-script
           samples/test-has-script-file.hs
           samples/test-receives-arguments.hs a b c
           samples/test-has-runtime-input.hs
+
+      - name: nix-script-haskell tests
+        run: |
+          cd nix-script-haskell
+          samples/hello-world.hs
+          samples/with-dependencies.hs
 
       - name: cleanup
         run: |
