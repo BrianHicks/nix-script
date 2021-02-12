@@ -9,13 +9,12 @@ version:             0.1.0.0
 -- description:
 -- bug-reports:
 -- license:
-license-file:        LICENSE
+license:             BSD3
 author:              Brian Hicks
 maintainer:          brian@brianthicks.com
 -- copyright:
 -- category:
 build-type:          Simple
-extra-source-files:  CHANGELOG.md
 
 executable nix-script
   main-is:             Main.hs

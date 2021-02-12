@@ -2,9 +2,6 @@
 }:
 let gitignore = pkgs.callPackage sources.gitignore { };
 in rec {
-  nix-script = pkgs.haskellPackages.callCabal2nix "nix-script"
-    (gitignore.gitignoreSource ./.) { };
-
   nix-script-haskell = pkgs.stdenv.mkDerivation {
     name = "nix-script-haskell";
 
