@@ -129,7 +129,7 @@ getDerivationTemplateFor target source = do
           then [text|wrapProgram $$out/$fileName --prefix PATH : $${with pkgs; pkgs.lib.makeBinPath [ $runtimeInputs ]}|]
           else "true"
   pure
-    ( [text|
+    [text|
         { pkgs ? import <nixpkgs> { }, ... }:
         pkgs.stdenv.mkDerivation {
           name = "$fileName";
@@ -155,7 +155,6 @@ getDerivationTemplateFor target source = do
           '';
         }
       |]
-    )
 
 getBuildCommand :: [Text] -> IO Text
 getBuildCommand sourceLines = do
@@ -163,7 +162,7 @@ getBuildCommand sourceLines = do
   case fromEnv of
     Just command -> pure $ Text.pack command
     Nothing ->
-      case catMaybes $ map (Text.stripPrefix "#!build ") sourceLines of
+      case mapMaybe (Text.stripPrefix "#!build ") sourceLines of
         [] -> fail "I couldn't find a build statement. Either set BUILD_COMMAND or add a `#!build` line to your script."
         [only] -> pure only
         many_ -> fail "I found more than one `#!build` statements in the source, but I can only handle one!"
@@ -172,13 +171,13 @@ getBuildInputs :: [Text] -> IO Text
 getBuildInputs sourceLines = do
   fromEnv <- Environment.lookupEnv "BUILD_INPUTS"
   let fromSource = map (Text.stripPrefix "#!buildInputs ") sourceLines
-  pure $ Text.intercalate " " $ catMaybes $ (fmap Text.pack fromEnv : fromSource)
+  pure $ Text.intercalate " " $ catMaybes (fmap Text.pack fromEnv : fromSource)
 
 getRuntimeInputs :: [Text] -> IO Text
 getRuntimeInputs sourceLines = do
   fromEnv <- Environment.lookupEnv "RUNTIME_INPUTS"
   let fromSource = map (Text.stripPrefix "#!runtimeInputs ") sourceLines
-  pure $ Text.intercalate " " $ catMaybes $ (fmap Text.pack fromEnv : fromSource)
+  pure $ Text.intercalate " " $ catMaybes (fmap Text.pack fromEnv : fromSource)
 
 getInterpreter :: [Text] -> IO Text
 getInterpreter sourceLines = do
@@ -186,7 +185,7 @@ getInterpreter sourceLines = do
   case fromEnv of
     Just interpreter -> pure $ Text.pack interpreter
     Nothing ->
-      case catMaybes $ map (Text.stripPrefix "#!interpreter ") sourceLines of
+      case mapMaybe (Text.stripPrefix "#!interpreter ") sourceLines of
         [] -> pure ""
         [only] -> pure only
         many_ -> fail "I found more than one `#!interpreter` statements in the source, but I can only handle one!"
