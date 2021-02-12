@@ -10,13 +10,12 @@ You might have guessed this already, but you can install this package with `nix`
 nix-env -if https://github.com/BrianHicks/nix-script/archive/main.zip
 ```
 
-If you're using this in a project, it would probably be better to add it to your project with [`niv`](https://github.com/nmattia/niv) or similar:
+You probably should use [`niv`](https://github.com/nmattia/niv) or similar, though!
+Once you do, you can control the version of `nixpkgs` you use (see "[Controlling `nixpkgs` version](#controlling-nixpkgs-version)" below.)
 
-```
-niv add BrianHicks/nix-script
-```
-
-Once you have that, `sources.nix-script` is a derivation that will install `nix-script` and all language helpers.
+This project's CI also pushes Linux builds to [`nix-script.cachix.org`](https://app.cachix.org/cache/nix-script) automatically.
+I push macOS builds by hand when I remember.
+(But there is not a lot of code in this project; a full rebuild is not too painful!)
 
 ## What? Why?
 
