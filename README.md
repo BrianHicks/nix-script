@@ -55,7 +55,7 @@ Well, that works, but now run time has ballooned to over 2 seconds!
 Eep!
 
 Enter `nix-script`!
-It transparently manages a compilation and nix-shell catch for scripts, and lets you specify dependencies and build commands inline using more shebangs!
+It transparently manages a compilation and nix-shell cache for scripts, and lets you specify dependencies and build commands inline using more shebangs!
 
 That means the example above can be rewritten like so:
 
