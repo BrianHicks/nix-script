@@ -6,8 +6,8 @@ import qualified Data.Text.IO as TextIO
 import NeatInterpolation (text)
 import qualified System.Directory as Directory
 import qualified System.Environment as Environment
-import qualified System.FilePath.Posix as FilePath
 import System.FilePath.Posix ((</>))
+import qualified System.FilePath.Posix as FilePath
 import qualified System.Process as Process
 
 main :: IO ()
@@ -58,13 +58,14 @@ buildAndRun target args = do
   cacheDir <- getCacheDir
   nixPath <- fromMaybe "" <$> Environment.lookupEnv "NIX_PATH"
   let hash =
-        Base16.encode $ SHA256.finalize $
-          SHA256.updates
-            SHA256.init
-            [ encodeUtf8 source,
-              encodeUtf8 derivationTemplate,
-              encodeUtf8 nixPath
-            ]
+        Base16.encode $
+          SHA256.finalize $
+            SHA256.updates
+              SHA256.init
+              [ encodeUtf8 source,
+                encodeUtf8 derivationTemplate,
+                encodeUtf8 nixPath
+              ]
   let cacheTarget = cacheDir </> (FilePath.takeFileName target ++ "-" ++ decodeUtf8 hash)
   -- rebuild, if necessary
   needToBuild <- not <$> existsAsValidSymlink cacheTarget
