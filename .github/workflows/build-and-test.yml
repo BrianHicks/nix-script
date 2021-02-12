@@ -15,4 +15,11 @@ jobs:
           name: nix-script
           authToken: '${{ secrets.CACHIX_AUTH_TOKEN }}'
           extraPullNames: niv
-      - run: nix-env -if .
+      - run: nix-build
+      - run: |
+          nix-env -if .
+
+          # core tests
+          ./nix-script/samples/test-has-script-file.hs
+          ./nix-script/samples/test-receives-arguments.hs a b c
+          ./nix-script/samples/test-has-runtime-input.hs
