@@ -1,14 +1,9 @@
-{-# LANGUAGE OverloadedStrings #-}
-{-# LANGUAGE QuasiQuotes #-}
-{-# LANGUAGE NoImplicitPrelude #-}
-
 import qualified Crypto.Hash.SHA256 as SHA256
 import qualified Data.ByteString.Base16 as Base16
 import qualified Data.List as List
 import qualified Data.Text as Text
 import qualified Data.Text.IO as TextIO
 import NeatInterpolation (text)
-import Relude
 import qualified System.Directory as Directory
 import qualified System.Environment as Environment
 import qualified System.FilePath.Posix as FilePath
