@@ -23,3 +23,7 @@ jobs:
           ./nix-script/samples/test-has-script-file.hs
           ./nix-script/samples/test-receives-arguments.hs a b c
           ./nix-script/samples/test-has-runtime-input.hs
+
+          # clean up so we don't push test paths to cachix
+          rm -rf .nix-script-cache
+          nix-collect-garbage -d
