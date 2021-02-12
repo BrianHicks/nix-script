@@ -162,6 +162,26 @@ main = Data.Text.IO.putStrLn "Hello, World!"
 
 Unlike other options, `#!haskellPackages` is not loaded from the environment.
 
+## Controlling `nixpkgs` version
+
+By default, `nix-script` will use the version of [nixpkgs](https://github.com/nixos/nixpkgs) we use to build scripts it's installed with.
+If you want to change this, specify `pinnedPkgs` when installing `nix-script`.
+For example, if you use `niv` that might look like:
+
+```nix
+let
+  sources = import ./nix/sources.nix { };
+  pkgs = import sources.nixpkgs { };
+in pkgs.mkShell {
+  buildInputs =
+    [ (pkgs.callPackage sources.nix-script { pinnedPkgs = sources.nixpkgs; }) ];
+}
+```
+
+The package set is included in the cache key calculations, so if you change your package set your scripts will automatically be rebuilt the next time you run them.
+
+You can check which package set the runner will build from by examining the source of the `nix-script` wrapper installed on your `PATH`.
+
 ## Climate Action
 
 I want my open-source work to support projects addressing the climate crisis (for example, projects in clean energy, public transit, reforestation, or sustainable agriculture.)
