@@ -25,6 +25,12 @@ jobs:
           samples/test-receives-arguments.hs a b c
           samples/test-has-runtime-input.hs
 
+      - name: nix-script-bash tests
+        run: |
+          cd nix-script-bash
+          samples/hello-world.sh
+          samples/with-dependencies.sh
+
       - name: nix-script-haskell tests
         run: |
           cd nix-script-haskell
