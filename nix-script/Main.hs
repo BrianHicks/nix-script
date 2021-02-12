@@ -4,9 +4,7 @@
 
 import qualified Crypto.Hash.SHA256 as SHA256
 import qualified Data.ByteString.Base16 as Base16
-import qualified Data.ByteString.UTF8
 import qualified Data.List as List
-import qualified Data.Maybe as Maybe
 import qualified Data.Text as Text
 import qualified Data.Text.IO as TextIO
 import NeatInterpolation (text)
@@ -15,7 +13,6 @@ import qualified System.Directory as Directory
 import qualified System.Environment as Environment
 import qualified System.FilePath.Posix as FilePath
 import System.FilePath.Posix ((</>))
-import System.IO (stderr)
 import qualified System.Process as Process
 
 main :: IO ()
@@ -32,7 +29,7 @@ main = do
 
 printUsage :: IO ()
 printUsage = do
-  name <- Text.pack <$> Environment.getProgName
+  name <- toText <$> Environment.getProgName
   TextIO.hPutStrLn
     stderr
     [text|
@@ -52,10 +49,10 @@ enterShell target = do
   packages <-
     if buildInputs == "" && runtimeInputs == ""
       then do
-        let targetForProblem = Text.pack target
+        let targetForProblem = toText target
         TextIO.hPutStrLn stderr [text|$targetForProblem doesn't have any build-time or runtime dependencies. Nothing for me to do!|]
         exitFailure
-      else pure $ Text.unpack $ Text.intercalate " " [buildInputs, runtimeInputs]
+      else pure $ toString $ Text.intercalate " " [buildInputs, runtimeInputs]
   Process.callProcess "nix-shell" ["-p", packages]
 
 buildAndRun :: FilePath -> [String] -> IO ()
@@ -73,12 +70,12 @@ buildAndRun target args = do
               encodeUtf8 derivationTemplate,
               encodeUtf8 nixPath
             ]
-  let cacheTarget = cacheDir </> (FilePath.takeFileName target ++ "-" ++ Data.ByteString.UTF8.toString hash)
+  let cacheTarget = cacheDir </> (FilePath.takeFileName target ++ "-" ++ decodeUtf8 hash)
   -- rebuild, if necessary
   needToBuild <- not <$> existsAsValidSymlink cacheTarget
   if needToBuild
     then build cacheTarget (FilePath.takeFileName target) derivationTemplate
-    else pure ()
+    else pass
   -- run the thing
   Environment.setEnv "SCRIPT_FILE" target
   Process.callProcess cacheTarget args
@@ -87,7 +84,7 @@ build :: FilePath -> FilePath -> Text -> IO ()
 build destination builtFile nixSource = do
   let dir = FilePath.takeDirectory destination
   Directory.createDirectoryIfMissing True dir
-  TextIO.writeFile (dir </> "default.nix") nixSource
+  writeFile (dir </> "default.nix") (toString nixSource)
   outLines <- List.lines <$> Process.readProcess "nix-build" ["--no-out-link", dir] []
   built <- case outLines of
     [] -> fail "nix-build did not give me a store path. How weird!"
@@ -109,12 +106,12 @@ existsAsValidSymlink target = do
 
 getCacheDir :: IO FilePath
 getCacheDir =
-  Maybe.fromMaybe ".nix-script-cache" <$> Environment.lookupEnv "NIX_SCRIPT_CACHE_PATH"
+  fromMaybe ".nix-script-cache" <$> Environment.lookupEnv "NIX_SCRIPT_CACHE_PATH"
 
 getDerivationTemplateFor :: FilePath -> Text -> IO Text
 getDerivationTemplateFor target source = do
-  dirName <- Text.pack <$> Directory.makeAbsolute (FilePath.takeDirectory target)
-  let fileName = Text.pack $ FilePath.takeFileName target
+  dirName <- toText <$> Directory.makeAbsolute (FilePath.takeDirectory target)
+  let fileName = toText $ FilePath.takeFileName target
   let sourceLines = lines source
   buildCommand <- getBuildCommand sourceLines
   buildInputs <- getBuildInputs sourceLines
@@ -160,7 +157,7 @@ getBuildCommand :: [Text] -> IO Text
 getBuildCommand sourceLines = do
   fromEnv <- Environment.lookupEnv "BUILD_COMMAND"
   case fromEnv of
-    Just command -> pure $ Text.pack command
+    Just command -> pure $ toText command
     Nothing ->
       case mapMaybe (Text.stripPrefix "#!build ") sourceLines of
         [] -> fail "I couldn't find a build statement. Either set BUILD_COMMAND or add a `#!build` line to your script."
@@ -171,19 +168,19 @@ getBuildInputs :: [Text] -> IO Text
 getBuildInputs sourceLines = do
   fromEnv <- Environment.lookupEnv "BUILD_INPUTS"
   let fromSource = map (Text.stripPrefix "#!buildInputs ") sourceLines
-  pure $ Text.intercalate " " $ catMaybes (fmap Text.pack fromEnv : fromSource)
+  pure $ Text.intercalate " " $ catMaybes (fmap toText fromEnv : fromSource)
 
 getRuntimeInputs :: [Text] -> IO Text
 getRuntimeInputs sourceLines = do
   fromEnv <- Environment.lookupEnv "RUNTIME_INPUTS"
   let fromSource = map (Text.stripPrefix "#!runtimeInputs ") sourceLines
-  pure $ Text.intercalate " " $ catMaybes (fmap Text.pack fromEnv : fromSource)
+  pure $ Text.intercalate " " $ catMaybes (fmap toText fromEnv : fromSource)
 
 getInterpreter :: [Text] -> IO Text
 getInterpreter sourceLines = do
   fromEnv <- Environment.lookupEnv "INTERPETER"
   case fromEnv of
-    Just interpreter -> pure $ Text.pack interpreter
+    Just interpreter -> pure $ toText interpreter
     Nothing ->
       case mapMaybe (Text.stripPrefix "#!interpreter ") sourceLines of
         [] -> pure ""
