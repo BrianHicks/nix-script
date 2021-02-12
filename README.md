@@ -79,22 +79,7 @@ The second time you run it, we'll just use the compiled binary.
 That takes 30ms or so for me!
 Big improvement!
 
-And, in addition to the speed boost, we can depend on any package in the nix ecosystem!
-For example, here's how you'd add `jq`:
-
-```haskell
-#!/usr/bin/env nix-script
-#!buildInputs pkgs.haskellPackages.ghc
-#!build ghc -O -o $OUT_FILE $SCRIPT_FILE
-#!runtimeInputs jq
-
-import System.Process
-
-main :: IO ()
-main = callProcess "jq" ["--help"]
-```
-
-But it's really not that ergonomic to have to write `#!build` lines, and I always forget how to call `pkgs.haskellPackages.ghcWithPackages`, so there's also a wrapper script called `nix-script-haskell` that makes this more ergonomic:
+But it's really not that fun to have to figure out that `#!build` line every time, and I always forget how to call `pkgs.haskellPackages.ghcWithPackages` correctly... so there's also a wrapper script called `nix-script-haskell` that makes this more nicer:
 
 ```haskell
 #!/usr/bin/env nix-script-haskell
@@ -106,6 +91,25 @@ import Data.Text.IO
 
 main :: IO ()
 main = Data.Text.IO.putStrLn "Hello, World!"
+```
+
+And, in addition to the speed boost, we can depend on any package in the nix ecosystem!
+For example, here's how you'd add and call `jq`:
+
+```haskell
+#!/usr/bin/env nix-script-haskell
+#!runtimeInputs jq
+
+import System.Process
+
+main :: IO ()
+main = do
+  formatted <-
+    readProcess
+      "jq"
+      ["--color-output", "."]
+      "{\"name\": \"Atlas\", \"species\": \"kitty cat\"}"
+  putStr formatted
 ```
 
 It's also pretty easy to create more wrapping interpreters, so we also ship one for bash (even though it's not compiled, we can cache the nix environment with your exact dependencies!)
