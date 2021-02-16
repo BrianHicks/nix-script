@@ -49,6 +49,7 @@ enterShell target = do
         TextIO.hPutStrLn stderr [text|$targetForProblem doesn't have any build-time or runtime dependencies. Nothing for me to do!|]
         exitFailure
       else pure $ toString $ Text.intercalate " " [buildInputs, runtimeInputs]
+  Environment.setEnv "SCRIPT_FILE" target
   Process.callProcess "nix-shell" ["-p", packages]
 
 buildAndRun :: FilePath -> [String] -> IO ()
