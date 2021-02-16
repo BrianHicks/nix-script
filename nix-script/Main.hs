@@ -50,7 +50,9 @@ enterShell target = do
         exitFailure
       else pure $ toString $ Text.intercalate " " [buildInputs, runtimeInputs]
   Environment.setEnv "SCRIPT_FILE" target
-  Process.callProcess "nix-shell" ["-p", packages]
+  Process.spawnProcess "nix-shell" ["-p", packages]
+    >>= Process.waitForProcess
+    >>= Exit.exitWith
 
 buildAndRun :: FilePath -> [String] -> IO ()
 buildAndRun target args = do
