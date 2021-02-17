@@ -39,6 +39,9 @@ jobs:
           samples/hello-world.hs
           samples/with-dependencies.hs
 
+          # make sure shell mode passes through
+          nix-script-haskell --script samples/hello-world.sh
+
       - name: cleanup
         run: |
           # clean up so we don't push test paths to cachix
