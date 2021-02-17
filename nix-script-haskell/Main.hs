@@ -21,7 +21,7 @@ callNixScript haskellPackages args = do
   Environment.setEnv
     "BUILD_INPUTS"
     ( "(haskellPackages.ghcWithPackages (ps: with ps; ["
-        ++ (Text.unpack (Text.intercalate " " haskellPackages))
+        ++ toString (Text.intercalate " " haskellPackages)
         ++ "]))"
     )
   Environment.setEnv "BUILD_COMMAND" "ghc -O -o $OUT_FILE $SCRIPT_FILE"
