@@ -8,30 +8,28 @@ main = do
   args <- Environment.getArgs
   case args of
     [] ->
-      callNixScript []
+      callNixScript [] []
     "--shell" : target : args -> do
-      setBuildInputsFromHaskellPackages target
-      callNixScript ("--shell" : target : args)
+      haskellPackages <- getHaskellPackages target
+      callNixScript haskellPackages ("--shell" : target : args)
     target : args -> do
-      setBuildInputsFromHaskellPackages target
-      callNixScript (target : args)
+      haskellPackages <- getHaskellPackages target
+      callNixScript haskellPackages (target : args)
 
-callNixScript :: [String] -> IO ()
-callNixScript args = do
+callNixScript :: [Text] -> [String] -> IO ()
+callNixScript haskellPackages args = do
+  Environment.setEnv
+    "BUILD_INPUTS"
+    ( "(haskellPackages.ghcWithPackages (ps: with ps; ["
+        ++ (Text.unpack (Text.intercalate " " haskellPackages))
+        ++ "]))"
+    )
   Environment.setEnv "BUILD_COMMAND" "ghc -O -o $OUT_FILE $SCRIPT_FILE"
   Process.spawnProcess "nix-script" args
     >>= Process.waitForProcess
     >>= Exit.exitWith
 
-setBuildInputsFromHaskellPackages :: FilePath -> IO ()
-setBuildInputsFromHaskellPackages target = do
+getHaskellPackages :: FilePath -> IO [Text]
+getHaskellPackages target = do
   sourceLines <- lines <$> readFileText target
-  case mapMaybe (Text.stripPrefix "#!haskellPackages ") sourceLines of
-    [] -> pure ()
-    deps ->
-      Environment.setEnv
-        "BUILD_INPUTS"
-        ( "(haskellPackages.ghcWithPackages (ps: with ps; ["
-            ++ (Text.unpack (Text.intercalate " " deps))
-            ++ "]))"
-        )
+  pure $ mapMaybe (Text.stripPrefix "#!haskellPackages ") sourceLines
