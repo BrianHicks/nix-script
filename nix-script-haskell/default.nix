@@ -1,6 +1,11 @@
 { sources ? import ../nix/sources.nix { }, pkgs ? import sources.nixpkgs { }
 , ... }:
-let gitignore = pkgs.callPackage sources.gitignore { };
+let
+  gitignore = pkgs.callPackage sources.gitignore { };
+
+  nix-script = pkgs.callPackage ../nix-script { };
+  nix-script-haskell = pkgs.haskellPackages.callCabal2nix "nix-script-haskell"
+    (gitignore.gitignoreSource ./.) { };
 in pkgs.stdenv.mkDerivation {
   name = "nix-script-haskell";
 
@@ -10,11 +15,8 @@ in pkgs.stdenv.mkDerivation {
 
   installPhase = ''
     mkdir -p $out/bin
-    mv nix-script-haskell.sh $out/bin/nix-script-haskell
 
-    wrapProgram $out/bin/nix-script-haskell \
-      --prefix PATH : ${
-        pkgs.lib.makeBinPath [ (pkgs.callPackage ../nix-script { }) ]
-      }
+    makeWrapper ${nix-script-haskell}/bin/nix-script-haskell $out/bin/nix-script-haskell \
+      --prefix PATH : ${pkgs.lib.makeBinPath [ nix-script ]}
   '';
 }
