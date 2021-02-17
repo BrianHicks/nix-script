@@ -1,9 +1,10 @@
 #!/usr/bin/env nix-script-haskell
-#!haskellPackages text
+#!haskellPackages relude
 
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE NoImplicitPrelude #-}
 
-import Data.Text.IO
+import Relude
 
 main :: IO ()
-main = Data.Text.IO.putStrLn "Hello, World!"
+main = putTextLn "Hello, World!"
