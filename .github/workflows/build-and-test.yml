@@ -33,6 +33,9 @@ jobs:
           samples/hello-world.sh
           samples/with-dependencies.sh
 
+          # make sure shell mode passes through
+          true | nix-script-bash --shell samples/with-dependencies.sh
+
       - name: nix-script-haskell tests
         run: |
           cd nix-script-haskell
@@ -40,7 +43,7 @@ jobs:
           samples/with-dependencies.hs
 
           # make sure shell mode passes through
-          nix-script-haskell --shell samples/hello-world.hs
+          true | nix-script-haskell --shell samples/hello-world.hs
 
       - name: cleanup
         run: |
