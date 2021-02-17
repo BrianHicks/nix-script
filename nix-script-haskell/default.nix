@@ -10,8 +10,15 @@ in pkgs.stdenv.mkDerivation {
   name = "nix-script-haskell";
 
   src = gitignore.gitignoreSource ./.;
+
   buildInputs = [ pkgs.makeWrapper ];
   buildPhase = "true";
+
+  doCheck = true;
+  checkInputs = [ pkgs.haskellPackages.hlint ];
+  checkPhase = ''
+    hlint .
+  '';
 
   installPhase = ''
     mkdir -p $out/bin
