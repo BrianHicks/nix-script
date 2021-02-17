@@ -40,7 +40,7 @@ jobs:
           samples/with-dependencies.hs
 
           # make sure shell mode passes through
-          nix-script-haskell --script samples/hello-world.sh
+          nix-script-haskell --shell samples/hello-world.hs
 
       - name: cleanup
         run: |
