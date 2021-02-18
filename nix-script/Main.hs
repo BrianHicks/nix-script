@@ -1,9 +1,15 @@
 import qualified Crypto.Hash.SHA256 as SHA256
 import qualified Data.ByteString.Base16 as Base16
+import Data.Fix (Fix (Fix))
 import qualified Data.List as List
 import qualified Data.Text as Text
 import qualified Data.Text.IO as TextIO
+import qualified Data.Text.Prettyprint.Doc as Doc
+import qualified Data.Text.Prettyprint.Doc.Render.Text as RenderText
 import NeatInterpolation (text)
+import qualified Nix.Expr.Types as NET
+import qualified Nix.Parser
+import qualified Nix.Pretty
 import qualified System.Directory as Directory
 import qualified System.Environment as Environment
 import qualified System.Exit as Exit
@@ -48,9 +54,14 @@ enterShell target = do
         let targetForProblem = toText target
         TextIO.hPutStrLn stderr [text|$targetForProblem doesn't have any build-time or runtime dependencies. Nothing for me to do!|]
         exitFailure
-      else pure $ toString $ Text.intercalate " " [buildInputs, runtimeInputs]
+      else case deps [buildInputs, runtimeInputs] of
+        Left problem -> do
+          TextIO.hPutStrLn stderr problem
+          exitFailure
+        Right success ->
+          pure $ map toString success
   Environment.setEnv "SCRIPT_FILE" target
-  Process.spawnProcess "nix-shell" ["-p", packages]
+  Process.spawnProcess "nix-shell" ("-p" : List.intersperse "-p" packages)
     >>= Process.waitForProcess
     >>= Exit.exitWith
 
@@ -186,3 +197,26 @@ getInterpreter sourceLines = do
         [] -> pure ""
         [only] -> pure only
         many_ -> fail "I found more than one `#!interpreter` statements in the source, but I can only handle one!"
+
+deps :: [Text] -> Either Text [Text]
+deps variousDeps = do
+  let source = Text.concat ["[ ", Text.intercalate " " variousDeps, " ]"]
+  let result = Nix.Parser.parseNixText source
+  case result of
+    Nix.Parser.Success (Fix (NET.NList deps)) -> do
+      let docs = map (\node -> Nix.Pretty.prettyNix node) deps
+      Right (map (RenderText.renderStrict . Doc.layoutCompact) docs)
+    Nix.Parser.Success node ->
+      Left
+        ( Text.concat
+            [ "Internal error: expected a list, but got: ",
+              RenderText.renderStrict $ Doc.layoutCompact $ Nix.Pretty.prettyNix node
+            ]
+        )
+    Nix.Parser.Failure problem ->
+      Left
+        ( Text.concat
+            [ "I had a problem parsing the script's dependencies: ",
+              RenderText.renderStrict $ Doc.layoutCompact problem
+            ]
+        )
