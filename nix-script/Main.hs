@@ -61,7 +61,7 @@ enterShell target = do
         Right success ->
           pure $ map toString success
   Environment.setEnv "SCRIPT_FILE" target
-  Process.spawnProcess "nix-shell" ("-p" : List.intersperse "-p" packages)
+  Process.spawnProcess "nix-shell" ("-p" : intersperse "-p" packages)
     >>= Process.waitForProcess
     >>= Exit.exitWith
 
@@ -204,7 +204,7 @@ deps variousDeps = do
   let result = Nix.Parser.parseNixText source
   case result of
     Nix.Parser.Success (Fix (NET.NList deps)) -> do
-      let docs = map (\node -> Nix.Pretty.prettyNix node) deps
+      let docs = map Nix.Pretty.prettyNix deps
       Right (map (RenderText.renderStrict . Doc.layoutCompact) docs)
     Nix.Parser.Success node ->
       Left
