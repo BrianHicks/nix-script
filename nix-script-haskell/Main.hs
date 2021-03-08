@@ -24,7 +24,10 @@ callNixScript haskellPackages args = do
         ++ toString (Text.intercalate " " haskellPackages)
         ++ "]))"
     )
-  Environment.setEnv "BUILD_COMMAND" "ghc -O -o $OUT_FILE $SCRIPT_FILE"
+  -- We have to add a `.hs` extension if it isn't present because otherwise
+  -- Haskell thinks we're trying to compile a named module instead of a file
+  -- in cases where the script file does not have an extension.
+  Environment.setEnv "BUILD_COMMAND" "mv $SCRIPT_FILE $SCRIPT_FILE.hs && ghc -O -o $OUT_FILE $SCRIPT_FILE.hs"
   Process.spawnProcess "nix-script" args
     >>= Process.waitForProcess
     >>= Exit.exitWith
