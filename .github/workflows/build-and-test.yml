@@ -41,6 +41,7 @@ jobs:
           cd nix-script-haskell
           samples/hello-world.hs
           samples/with-dependencies.hs
+          samples/no-extension
 
           # make sure shell mode passes through
           true | nix-script-haskell --shell samples/hello-world.hs
