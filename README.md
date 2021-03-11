@@ -1,6 +1,6 @@
 # nix-script
 
-`nix-script` lets you write quick scripts in compiled languages, tranparently compile and cache them, and pull in whatever dependencies you need from the Nix ecosystem.
+`nix-script` lets you write quick scripts in compiled languages, transparently compile and cache them, and pull in whatever dependencies you need from the Nix ecosystem.
 
 This README is intended more as a reference, but I also wrote  [a blog post to explain what this is and why it exists](https://bytes.zone/posts/nix-script/).
 
