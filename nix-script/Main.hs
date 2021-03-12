@@ -127,15 +127,7 @@ getDerivationTemplateFor target source = do
   buildCommand <- getBuildCommand sourceLines
   buildInputs <- getBuildInputs sourceLines
   runtimeInputs <- getRuntimeInputs sourceLines
-  interpreter <- getInterpreter sourceLines
-  let swapInterpreter =
-        if interpreter /= ""
-          then [text|sed -i "1c#!/usr/bin/env $interpreter" $$SCRIPT_FILE|]
-          else "true"
-  let callWrapProgram =
-        if runtimeInputs /= ""
-          then [text|wrapProgram $$out/$fileName --prefix PATH : $${with pkgs; pkgs.lib.makeBinPath [ $runtimeInputs ]}|]
-          else "true"
+  installPhase <- getInstallPhase fileName sourceLines
   pure
     [text|
         { pkgs ? import <nixpkgs> { }, ... }:
@@ -143,12 +135,10 @@ getDerivationTemplateFor target source = do
           name = "$fileName";
           src = builtins.filterSource (path: _: path == "$dirName/$fileName") $dirName;
 
-          buildInputs = with pkgs; [ makeWrapper $buildInputs ];
+          buildInputs = with pkgs; [ makeWrapper $buildInputs $runtimeInputs ];
           buildPhase = ''
             OUT_FILE=$fileName
             SCRIPT_FILE=$fileName
-
-            $swapInterpreter
 
             # TODO: this should be escaped somehow so two single primes
             # don't mess it up
@@ -157,12 +147,32 @@ getDerivationTemplateFor target source = do
 
           installPhase = ''
             mkdir -p $$out
-            mv $fileName $$out/$fileName
-
-            $callWrapProgram
+            $installPhase
           '';
         }
       |]
+
+getInstallPhase :: Text -> [Text] -> IO Text
+getInstallPhase fileName sourceLines = do
+  runtimeInputs <- getRuntimeInputs sourceLines
+  interpreter <- getInterpreter sourceLines
+  let addPath =
+        if runtimeInputs /= ""
+          then [text|--prefix PATH : $${with pkgs; pkgs.lib.makeBinPath [ $runtimeInputs ]}|]
+          else ""
+  pure $ case (words interpreter, addPath) of
+    ([], "") -> [text|mv $fileName $$out/$fileName|]
+    ([], _) ->
+      [text|
+        mv $fileName $$out/$fileName
+        wrapProgram $$out/$fileName $addPath
+      |]
+    (command : args, _) ->
+      let flags = unwords args
+       in [text|
+        mv $fileName $$out/.$fileName
+        makeWrapper "$$(command -v $command)" $$out/$fileName --add-flags "$flags $$out/.$fileName" $$addPath
+       |]
 
 getBuildCommand :: [Text] -> IO Text
 getBuildCommand sourceLines = do
