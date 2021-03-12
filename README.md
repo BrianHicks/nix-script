@@ -50,6 +50,11 @@ Building a new version for every change can get a little tiresome while developi
 If you want a quicker feedback loop, you can invoke `nix-script` and friends like `nix-script --shell path/to/script` to drop into a development shell with your build- and runtime dependencies.
 This won't run your build command, but it will let you run it yourself, play around in repls, etc.
 
+If you are making a wrapper script, you may find the `SHELL_RUN` environment variable useful: it allows you to specify what command to run in the shell.
+If your language ecosystem has some common watcher script, it might be nice to add a special mode to your wrapper for it!
+(For example, `nix-script-haskell` has a `--ghcid` flag for this purpose.
+See the source for how it's set up!)
+
 ### `nix-script-bash`
 
 `nix-script-bash` exists to let you specify exact versions of your dependencies via Nix.
@@ -83,6 +88,8 @@ main = Data.Text.IO.putStrLn "Hello, World!"
 ```
 
 Unlike other shebang options, `#!haskellPackages` does not have an equivalent setting in the environment.
+
+You can get quick compilation feedback by running `nix-script-haskell --ghcid path/to/your/script.hs`.
 
 ## Controlling `nixpkgs` version
 
