@@ -179,7 +179,7 @@ getInstallPhase fileName sourceLines = do
       let flags = unwords args
        in [text|
         mv $fileName $$out/.$fileName
-        makeWrapper "$$(command -v $command)" $$out/$fileName --add-flags "$flags $$out/.$fileName" $$addPath
+        makeWrapper "$$(command -v $command)" $$out/$fileName --add-flags "$flags $$out/.$fileName" $addPath
        |]
 
 getBuildCommand :: [Text] -> IO Text
