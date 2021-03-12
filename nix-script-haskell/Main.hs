@@ -9,6 +9,11 @@ main = do
   case args of
     [] ->
       callNixScript [] []
+    "--ghcid" : target : _ -> do
+      Environment.setEnv "RUNTIME_INPUTS" "haskellPackages.ghcid"
+      Environment.setEnv "SHELL_RUN" ("ghcid " ++ target)
+      haskellPackages <- getHaskellPackages target
+      callNixScript haskellPackages ["--shell", target]
     "--shell" : target : args -> do
       haskellPackages <- getHaskellPackages target
       callNixScript haskellPackages ("--shell" : target : args)

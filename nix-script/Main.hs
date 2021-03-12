@@ -60,8 +60,16 @@ enterShell target = do
           exitFailure
         Right success ->
           pure $ map toString success
+  maybeRun <- Environment.lookupEnv "SHELL_RUN"
+
+  let args =
+        concat $
+          catMaybes
+            [ fmap (\run -> ["--run", run]) maybeRun,
+              Just ("-p" : intersperse "-p" packages)
+            ]
   Environment.setEnv "SCRIPT_FILE" target
-  Process.spawnProcess "nix-shell" ("-p" : intersperse "-p" packages)
+  Process.spawnProcess "nix-shell" args
     >>= Process.waitForProcess
     >>= Exit.exitWith
 
