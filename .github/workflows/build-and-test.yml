@@ -26,6 +26,7 @@ jobs:
           samples/test-has-script-file.hs
           samples/test-receives-arguments.hs a b c
           samples/test-has-runtime-input.hs
+          samples/test-program-name.hs
 
       - name: nix-script-bash tests
         run: |
