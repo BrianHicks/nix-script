@@ -168,18 +168,17 @@ getInstallPhase fileName sourceLines = do
         if runtimeInputs /= ""
           then [text|--prefix PATH : $${with pkgs; pkgs.lib.makeBinPath [ $runtimeInputs ]}|]
           else ""
-  pure $ case (words interpreter, addPath) of
-    ([], "") -> [text|mv $fileName $$out/$fileName|]
-    ([], _) ->
+  pure $ case words interpreter of
+    [] ->
       [text|
         mv $fileName $$out/$fileName
-        wrapProgram $$out/$fileName $addPath
+        wrapProgram $$out/$fileName --argv0 $fileName $addPath
       |]
-    (command : args, _) ->
+    command : args ->
       let flags = unwords args
        in [text|
         mv $fileName $$out/.$fileName
-        makeWrapper "$$(command -v $command)" $$out/$fileName --add-flags "$flags $$out/.$fileName" $addPath
+        makeWrapper "$$(command -v $command)" $$out/$fileName --argv0 $fileName --add-flags "$flags $$out/.$fileName" $addPath
        |]
 
 getBuildCommand :: [Text] -> IO Text
