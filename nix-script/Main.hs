@@ -51,19 +51,6 @@ main = do
     then enterShell (target options)
     else buildAndRun (target options) (args options)
 
-printUsage :: IO ()
-printUsage = do
-  name <- toText <$> Environment.getProgName
-  TextIO.hPutStrLn
-    stderr
-    [text|
-      USAGE: $name path/to/script
-
-      But really, you should just use this in a script's shebang, like so:
-
-          #!/usr/bin/env $name
-    |]
-
 enterShell :: FilePath -> IO ()
 enterShell target = do
   source <- readFileText target
