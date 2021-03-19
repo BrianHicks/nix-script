@@ -21,6 +21,7 @@ executable nix-script-haskell
   -- other-modules:
   -- other-extensions:
   build-depends:       base >=4.13 && <4.15
+                     , optparse-applicative
                      , process ^>= 1.6.9.0
                      , relude ^>= 0.7.0.0
                      , text ^>= 1.2.4.0

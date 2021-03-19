@@ -1,25 +1,57 @@
 import qualified Data.Text as Text
+import qualified Options.Applicative as Options
 import qualified System.Environment as Environment
 import qualified System.Exit as Exit
 import qualified System.Process as Process
 
+data Options = Options
+  { isGhcidMode :: Bool,
+    isShellMode :: Bool,
+    target :: FilePath,
+    args :: [String]
+  }
+
+optionsParser :: Options.ParserInfo Options
+optionsParser =
+  Options.info
+    ( Options
+        <$> Options.switch
+          ( Options.long "ghcid"
+              <> Options.help "Launch a ghcid session watching TARGET"
+          )
+        <*> Options.switch
+          ( Options.long "shell"
+              <> Options.help "Enter a shell with all script dependencies"
+          )
+        <*> Options.strArgument
+          (Options.metavar "SCRIPT" <> Options.help "Path to the script to run")
+        <*> many (Options.strArgument (Options.metavar "ARGS" <> Options.help "Arguments to pass to your script"))
+        <**> Options.helper
+    )
+    ( Options.fullDesc
+        <> Options.progDesc "Does the same as nix-script, but specializes some options for scripts written in Haskell."
+        <> Options.footer "This program handles flags the same way as nix-script, namely: if you use --help, --ghcid, or --shell it must be before any positional arguments. Otherwise, it will be passed to your script after compilation."
+        <> Options.forwardOptions -- so script targets can define their own --flags
+        <> Options.noIntersperse -- so script targets can define flags that we also use
+    )
+
 main :: IO ()
 main = do
-  args <- Environment.getArgs
-  case args of
-    [] ->
-      callNixScript [] []
-    "--ghcid" : target : _ -> do
+  options <- Options.execParser optionsParser
+  if isGhcidMode options
+    then do
       Environment.setEnv "RUNTIME_INPUTS" "haskellPackages.ghcid"
-      Environment.setEnv "SHELL_RUN" ("ghcid " ++ target)
-      haskellPackages <- getHaskellPackages target
-      callNixScript haskellPackages ["--shell", target]
-    "--shell" : target : args -> do
-      haskellPackages <- getHaskellPackages target
-      callNixScript haskellPackages ("--shell" : target : args)
-    target : args -> do
-      haskellPackages <- getHaskellPackages target
-      callNixScript haskellPackages (target : args)
+      Environment.setEnv "SHELL_RUN" ("ghcid " ++ target options)
+      haskellPackages <- getHaskellPackages (target options)
+      callNixScript haskellPackages ["--shell", target options]
+    else
+      if isShellMode options
+        then do
+          haskellPackages <- getHaskellPackages (target options)
+          callNixScript haskellPackages ("--shell" : target options : args options)
+        else do
+          haskellPackages <- getHaskellPackages (target options)
+          callNixScript haskellPackages (target options : args options)
 
 callNixScript :: [Text] -> [String] -> IO ()
 callNixScript haskellPackages args = do
