@@ -27,6 +27,7 @@ executable nix-script
                      , directory ^>= 1.3.6.0
                      , filepath ^>= 1.4.2.1
                      , neat-interpolation
+                     , optparse-applicative
                      , prettyprinter >= 1.6.2 && < 1.8
                      , process ^>= 1.6.9.0
                      , relude ^>= 0.7.0.0

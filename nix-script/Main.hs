@@ -10,6 +10,7 @@ import NeatInterpolation (text)
 import qualified Nix.Expr.Types as NET
 import qualified Nix.Parser
 import qualified Nix.Pretty
+import qualified Options.Applicative as Options
 import qualified System.Directory as Directory
 import qualified System.Environment as Environment
 import qualified System.Exit as Exit
@@ -17,17 +18,38 @@ import System.FilePath.Posix ((</>))
 import qualified System.FilePath.Posix as FilePath
 import qualified System.Process as Process
 
+data Options = Options
+  { isShellMode :: Bool,
+    target :: FilePath,
+    args :: [String]
+  }
+
+optionsParser :: Options.ParserInfo Options
+optionsParser =
+  Options.info
+    ( Options
+        <$> Options.switch
+          ( Options.long "shell"
+              <> Options.help "Enter a shell with all script dependencies"
+          )
+        <*> Options.strArgument
+          (Options.metavar "SCRIPT" <> Options.help "Path to the script to run")
+        <*> many (Options.strArgument (Options.metavar "ARGS" <> Options.help "Arguments to pass to your script"))
+        <**> Options.helper
+    )
+    ( Options.fullDesc
+        <> Options.progDesc "Transparently manage a compilation cache for scripts written in compiled languages. When you use this program as the interpreter in a script by saying `#!/usr/bin/env nix-script` on the first line, it will automatically manage dependencies for you. See the project README for the full directive list."
+        <> Options.footer "Since this program is intended to be used as an interpreter, flags like --shell must be passed before the script name. Otherwise, they will be passed to your script as-is! That means an invocation like `nix-script --help test.hs` will show help, but `nix-script test.hs --help` will pass `--help` to the program in `test.hs`."
+        <> Options.forwardOptions -- so script targets can define their own --flags
+        <> Options.noIntersperse -- so script targets can define flags that we also use
+    )
+
 main :: IO ()
 main = do
-  args <- Environment.getArgs
-  case args of
-    [] -> do
-      printUsage
-      exitFailure
-    ["--shell", target] ->
-      enterShell target
-    target : args ->
-      buildAndRun target args
+  options <- Options.execParser optionsParser
+  if isShellMode options
+    then enterShell (target options)
+    else buildAndRun (target options) (args options)
 
 printUsage :: IO ()
 printUsage = do
