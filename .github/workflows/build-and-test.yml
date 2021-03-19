@@ -25,6 +25,7 @@ jobs:
           cd nix-script
           samples/test-has-script-file.hs
           samples/test-receives-arguments.hs a b c
+          samples/test-receives-flags.hs --help
           samples/test-has-runtime-input.hs
           samples/test-program-name.hs
 
