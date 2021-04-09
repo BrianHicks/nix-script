@@ -1,6 +1,6 @@
 { sources ? import ../nix/sources.nix { }, pkgs ? import sources.nixpkgs { }
-, ... }:
-let nix-script = pkgs.callPackage ../nix-script { };
+, pinnedPkgs ? sources.nixpkgs, ... }:
+let nix-script = pkgs.callPackage ../nix-script { inherit pinnedPkgs; };
 in pkgs.stdenv.mkDerivation {
   name = "nix-script-bash";
 

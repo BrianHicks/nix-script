@@ -1,9 +1,9 @@
 { sources ? import ../nix/sources.nix { }, pkgs ? import sources.nixpkgs { }
-, ... }:
+, pinnedPkgs ? sources.nixpkgs, ... }:
 let
   gitignore = pkgs.callPackage sources.gitignore { };
 
-  nix-script = pkgs.callPackage ../nix-script { };
+  nix-script = pkgs.callPackage ../nix-script { inherit pinnedPkgs; };
   nix-script-haskell = pkgs.haskellPackages.callCabal2nix "nix-script-haskell"
     (gitignore.gitignoreSource ./.) { };
 in pkgs.stdenv.mkDerivation {
