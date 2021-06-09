@@ -229,17 +229,17 @@ deps variousDeps = do
   let source = Text.concat ["[ ", Text.intercalate " " variousDeps, " ]"]
   let result = Nix.Parser.parseNixText source
   case result of
-    Nix.Parser.Success (Fix (NET.NList deps)) -> do
+    Right (Fix (NET.NList deps)) -> do
       let docs = map Nix.Pretty.prettyNix deps
       Right (map (RenderText.renderStrict . Doc.layoutCompact) docs)
-    Nix.Parser.Success node ->
+    Right node ->
       Left
         ( Text.concat
             [ "Internal error: expected a list, but got: ",
               RenderText.renderStrict $ Doc.layoutCompact $ Nix.Pretty.prettyNix node
             ]
         )
-    Nix.Parser.Failure problem ->
+    Left problem ->
       Left
         ( Text.concat
             [ "I had a problem parsing the script's dependencies: ",

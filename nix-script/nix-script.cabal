@@ -31,7 +31,7 @@ executable nix-script
                      , prettyprinter >= 1.6.2 && < 1.8
                      , process ^>= 1.6.9.0
                      , relude ^>= 0.7.0.0
-                     , hnix >= 0.9.1 && < 0.13
+                     , hnix >= 0.13.0 && < 0.14
                      , text ^>= 1.2.4.0
                      , utf8-string ^>= 1.0.1.1
   -- hs-source-dirs:
