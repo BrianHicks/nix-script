@@ -84,8 +84,9 @@ enterShell target = do
 
 buildAndRun :: FilePath -> [String] -> IO ()
 buildAndRun target args = do
-  source <- readFileText target
-  derivationTemplate <- getDerivationTemplateFor target source
+  canonicalTarget <- Directory.canonicalizePath target
+  source <- readFileText canonicalTarget
+  derivationTemplate <- getDerivationTemplateFor canonicalTarget source
   -- what's our target?
   cacheDir <- getCacheDir
   nixPath <- fromMaybe "" <$> Environment.lookupEnv "NIX_PATH"
@@ -98,11 +99,11 @@ buildAndRun target args = do
                 encodeUtf8 derivationTemplate,
                 encodeUtf8 nixPath
               ]
-  let cacheTarget = cacheDir </> (FilePath.takeFileName target ++ "-" ++ decodeUtf8 hash)
+  let cacheTarget = cacheDir </> (FilePath.takeFileName canonicalTarget ++ "-" ++ decodeUtf8 hash)
   -- rebuild, if necessary
   needToBuild <- not <$> existsAsValidSymlink cacheTarget
   if needToBuild
-    then build cacheTarget (FilePath.takeFileName target) derivationTemplate
+    then build cacheTarget (FilePath.takeFileName canonicalTarget) derivationTemplate
     else pass
   -- run the thing
   Environment.setEnv "SCRIPT_FILE" target
@@ -137,9 +138,9 @@ getCacheDir =
   fromMaybe ".nix-script-cache" <$> Environment.lookupEnv "NIX_SCRIPT_CACHE_PATH"
 
 getDerivationTemplateFor :: FilePath -> Text -> IO Text
-getDerivationTemplateFor target source = do
-  dirName <- toText <$> Directory.canonicalizePath (FilePath.takeDirectory target)
-  let fileName = toText $ FilePath.takeFileName target
+getDerivationTemplateFor canonicalTarget source = do
+  let dirName = toText $ FilePath.takeDirectory canonicalTarget
+  let fileName = toText $ FilePath.takeFileName canonicalTarget
   let sourceLines = lines source
   buildCommand <- getBuildCommand sourceLines
   buildInputs <- getBuildInputs sourceLines
