@@ -29,6 +29,10 @@ jobs:
           samples/test-has-runtime-input.hs
           samples/test-program-name.hs
 
+          # we need to handle GC happening in /nix/store gracefully
+          find .nix-script-cache -type l | xargs -n 1 readlink | xargs nix-store --delete
+          samples/test-program-name.hs
+
       - name: nix-script-bash tests
         run: |
           cd nix-script-bash
