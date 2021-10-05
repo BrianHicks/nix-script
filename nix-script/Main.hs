@@ -111,6 +111,14 @@ buildAndRun target args = do
 
 build :: FilePath -> FilePath -> Text -> IO ()
 build destination builtFile nixSource = do
+  -- sometimes symlinks get stale due to Nix garbage collection. No matter;
+  -- if we're building we can just clean them out and recreate them.
+  alreadyExists <- Directory.pathIsSymbolicLink destination
+  if alreadyExists
+    then Directory.removeFile destination
+    else pass
+
+  -- perform the build...
   let dir = FilePath.takeDirectory destination
   Directory.createDirectoryIfMissing True dir
   writeFile (dir </> "default.nix") (toString nixSource)
@@ -118,6 +126,8 @@ build destination builtFile nixSource = do
   built <- case outLines of
     [] -> fail "nix-build did not give me a store path. How weird!"
     first : _ -> pure first
+
+  -- ... and put the result in the right place!
   Directory.createFileLink (built </> builtFile) destination
 
 existsAsValidSymlink :: FilePath -> IO Bool
