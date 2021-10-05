@@ -103,14 +103,14 @@ buildAndRun target args = do
   -- rebuild, if necessary
   needToBuild <- not <$> existsAsValidSymlink cacheTarget
   if needToBuild
-    then build cacheTarget (FilePath.takeFileName canonicalTarget) derivationTemplate
+    then buildAndLink cacheTarget (FilePath.takeFileName canonicalTarget) derivationTemplate
     else pass
   -- run the thing
   Environment.setEnv "SCRIPT_FILE" target
   Process.spawnProcess cacheTarget args >>= Process.waitForProcess >>= Exit.exitWith
 
-build :: FilePath -> FilePath -> Text -> IO ()
-build destination builtFile nixSource = do
+buildAndLink :: FilePath -> FilePath -> Text -> IO ()
+buildAndLink destination builtFile nixSource = do
   -- sometimes symlinks get stale due to Nix garbage collection. No matter;
   -- if we're building we can just clean them out and recreate them.
   alreadyExists <- Directory.pathIsSymbolicLink destination
