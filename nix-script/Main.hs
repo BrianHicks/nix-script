@@ -129,7 +129,7 @@ link destination built = do
   state <- symlinkState destination
   case state of
     DoesNotExist -> pass
-    IsAFile -> fail ("I expected to see a symlink at " ++ destination ++ " but saw a file. What's going on?")
+    NotASymlink -> fail ("I expected " ++ destination ++ " to be a symlink, but it wasn't. What's going on?")
     _ -> do
       Directory.removeFile destination
       putStrLn ("removing " ++ destination)
@@ -138,7 +138,7 @@ link destination built = do
 
 data SymlinkState
   = DoesNotExist
-  | IsAFile
+  | NotASymlink
   | TargetExists
   | TargetAbsent
   deriving (Show)
@@ -151,7 +151,7 @@ symlinkState target = do
     else do
       isSymlink <- Directory.pathIsSymbolicLink target
       if not isSymlink
-        then pure IsAFile
+        then pure NotASymlink
         else do
           targetExists <- Directory.doesFileExist =<< Directory.getSymbolicLinkTarget target
           if targetExists
