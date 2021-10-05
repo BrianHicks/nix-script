@@ -100,11 +100,15 @@ buildAndRun target args = do
                 encodeUtf8 nixPath
               ]
   let cacheTarget = cacheDir </> (FilePath.takeFileName canonicalTarget ++ "-" ++ decodeUtf8 hash)
+
   -- rebuild, if necessary
-  needToBuild <- not <$> existsAsValidSymlink cacheTarget
-  if needToBuild
-    then build cacheTarget derivationTemplate >>= link cacheTarget
-    else pass
+  state <- symlinkState cacheTarget
+  case state of
+    TargetExists -> pass
+    _ -> do
+      builtDerivation <- build cacheTarget derivationTemplate
+      link cacheTarget (builtDerivation </> FilePath.takeFileName canonicalTarget)
+
   -- run the thing
   Environment.setEnv "SCRIPT_FILE" target
   Process.spawnProcess cacheTarget args >>= Process.waitForProcess >>= Exit.exitWith
@@ -122,25 +126,37 @@ build destination nixSource = do
 
 link :: FilePath -> FilePath -> IO ()
 link destination built = do
-  alreadyExists <- Directory.pathIsSymbolicLink destination
-  if alreadyExists
-    then Directory.removeFile destination
-    else pass
+  state <- symlinkState destination
+  case state of
+    DoesNotExist -> pass
+    IsAFile -> fail ("I expected to see a symlink at " ++ destination ++ " but saw a file. What's going on?")
+    _ -> do
+      Directory.removeFile destination
+      putStrLn ("removing " ++ destination)
 
   Directory.createFileLink built destination
 
-existsAsValidSymlink :: FilePath -> IO Bool
-existsAsValidSymlink target = do
-  exists <- Directory.doesFileExist target
+data SymlinkState
+  = DoesNotExist
+  | IsAFile
+  | TargetExists
+  | TargetAbsent
+  deriving (Show)
+
+symlinkState :: FilePath -> IO SymlinkState
+symlinkState target = do
+  exists <- Directory.doesPathExist target
   if not exists
-    then pure False
+    then pure DoesNotExist
     else do
       isSymlink <- Directory.pathIsSymbolicLink target
       if not isSymlink
-        then pure False
+        then pure IsAFile
         else do
-          linkTarget <- Directory.getSymbolicLinkTarget target
-          Directory.doesFileExist linkTarget
+          targetExists <- Directory.doesFileExist =<< Directory.getSymbolicLinkTarget target
+          if targetExists
+            then pure TargetExists
+            else pure TargetAbsent
 
 getCacheDir :: IO FilePath
 getCacheDir =
