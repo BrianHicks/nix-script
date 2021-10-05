@@ -103,32 +103,31 @@ buildAndRun target args = do
   -- rebuild, if necessary
   needToBuild <- not <$> existsAsValidSymlink cacheTarget
   if needToBuild
-    then buildAndLink cacheTarget (FilePath.takeFileName canonicalTarget) derivationTemplate
+    then build cacheTarget derivationTemplate >>= link cacheTarget
     else pass
   -- run the thing
   Environment.setEnv "SCRIPT_FILE" target
   Process.spawnProcess cacheTarget args >>= Process.waitForProcess >>= Exit.exitWith
 
-buildAndLink :: FilePath -> FilePath -> Text -> IO ()
-buildAndLink destination builtFile nixSource = do
-  -- sometimes symlinks get stale due to Nix garbage collection. No matter;
-  -- if we're building we can just clean them out and recreate them.
+build :: FilePath -> Text -> IO FilePath
+build destination nixSource = do
+  let dir = FilePath.takeDirectory destination
+  Directory.createDirectoryIfMissing True dir
+  writeFile (dir </> "default.nix") (toString nixSource)
+  outLines <- List.lines <$> Process.readProcess "nix-build" ["--no-out-link", dir] []
+
+  case outLines of
+    [] -> fail "nix-build did not give me a store path. How weird!"
+    first : _ -> pure first
+
+link :: FilePath -> FilePath -> IO ()
+link destination built = do
   alreadyExists <- Directory.pathIsSymbolicLink destination
   if alreadyExists
     then Directory.removeFile destination
     else pass
 
-  -- perform the build...
-  let dir = FilePath.takeDirectory destination
-  Directory.createDirectoryIfMissing True dir
-  writeFile (dir </> "default.nix") (toString nixSource)
-  outLines <- List.lines <$> Process.readProcess "nix-build" ["--no-out-link", dir] []
-  built <- case outLines of
-    [] -> fail "nix-build did not give me a store path. How weird!"
-    first : _ -> pure first
-
-  -- ... and put the result in the right place!
-  Directory.createFileLink (built </> builtFile) destination
+  Directory.createFileLink built destination
 
 existsAsValidSymlink :: FilePath -> IO Bool
 existsAsValidSymlink target = do
