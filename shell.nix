@@ -1,18 +1,13 @@
-{ ... }:
-let
-  sources = import ./nix/sources.nix;
-  nixpkgs = import sources.nixpkgs { };
-  niv = import sources.niv { };
-in with nixpkgs;
-pkgs.mkShell {
-  inputsFrom =
-    [ (haskellPackages.callCabal2nix "nix-script" ./nix-script { }).env ];
-  buildInputs = [
-    niv.niv
-    git
-    cabal-install
-    haskellPackages.ormolu
-    haskellPackages.hlint
-    haskellPackages.ghcid
-  ];
-}
+(import
+  (
+    let
+      lock = builtins.fromJSON (builtins.readFile ./flake.lock);
+    in
+    fetchTarball {
+      url = "https://github.com/edolstra/flake-compat/archive/${lock.nodes.flake-compat.locked.rev}.tar.gz";
+      sha256 = lock.nodes.flake-compat.locked.narHash;
+    }
+  )
+  {
+    src = ./.;
+  }).shellNix
