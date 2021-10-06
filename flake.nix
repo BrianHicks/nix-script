@@ -1,0 +1,88 @@
+{
+  description = "write scripts in compiled languages that run in the nix ecosystem, with no separate build step";
+
+  inputs = {
+    utils.url = "github:numtide/flake-utils";
+    nixpkgs.url = "github:NixOS/nixpkgs/release-21.05";
+    flake-compat = { url = "github:edolstra/flake-compat"; flake = false; };
+  };
+
+  outputs = inputs@{ self, nixpkgs, utils, flake-compat }:
+    (utils.lib.eachDefaultSystem
+      (system:
+        let
+          pkgs = import nixpkgs {
+            inherit system;
+            overlays = [
+              self.overlay
+            ];
+            config = { allowUnsupportedSystem = true; };
+          };
+          nix-script-shell = with pkgs;[
+            nix-script
+            nix-script-haskell
+            nix-script-bash
+            (haskellPackages.ghcWithPackages
+              (p: with p;  [
+                relude
+              ]))
+          ];
+        in
+        rec {
+          packages = {
+            inherit (pkgs)
+              nix-script
+              nix-script-bash
+              nix-script-haskell;
+          };
+
+          defaultPackage = pkgs.nix-script;
+
+          devShell = with pkgs; mkShell {
+            buildInputs = [
+              nix-script-shell
+            ];
+          };
+
+          apps = {
+            checks = utils.lib.mkApp {
+              drv = with import nixpkgs { system = "${system}"; };
+                pkgs.writeShellScriptBin "nix-script-example-checks" ''
+                  set -x pipefail
+                  export PATH=${
+                   pkgs.lib.strings.makeBinPath ([
+                     pkgs.nixUnstable
+                   ] ++ nix-script-shell)}
+                    echo "Checking: nix-script"
+                    for i in  ${./.}/nix-script/samples/*; do
+                    nix-script $i
+                    done
+                    echo "Checking: nix-script-haskell"
+                    for i in  ${./.}/nix-script-haskell/samples/*; do
+                    nix-script-haskell $i
+                    done
+                    echo "Checking: nix-script-haskell"
+                    for i in  ${./.}/nix-script-bash/samples/*; do
+                    nix-script-bash $i
+                    done
+                '';
+            };
+          };
+
+        }
+      )
+    ) //
+    {
+      overlay = final: prev: {
+        haskellPackages = prev.haskellPackages.override (old: {
+          overrides = final.lib.composeExtensions (old.overrides or (_: _: { })) (hself: hsuper: {
+            nix-script = prev.haskellPackages.callCabal2nix "nix-script" ./nix-script { };
+            nix-script-haskell = prev.haskellPackages.callCabal2nix "nix-script-haskell" ./nix-script-haskell { };
+          });
+        });
+        nix-script = with final;  haskell.lib.justStaticExecutables haskellPackages.nix-script;
+        nix-script-haskell = prev.callPackage ./nix-script-haskell { };
+        nix-script-bash = prev.callPackage ./nix-script-bash { };
+      };
+    };
+}

@@ -1,10 +1,13 @@
-{ sources ? import ./nix/sources.nix { }, pkgs ? import sources.nixpkgs { }
-, pinnedPkgs ? sources.nixpkgs, ... }:
-pkgs.symlinkJoin {
-  name = "nix-script";
-  paths = [
-    (pkgs.callPackage ./nix-script { inherit pinnedPkgs; })
-    (pkgs.callPackage ./nix-script-bash { inherit pinnedPkgs; })
-    (pkgs.callPackage ./nix-script-haskell { inherit pinnedPkgs; })
-  ];
-}
+(import
+  (
+    let
+      lock = builtins.fromJSON (builtins.readFile ./flake.lock);
+    in
+    fetchTarball {
+      url = "https://github.com/edolstra/flake-compat/archive/${lock.nodes.flake-compat.locked.rev}.tar.gz";
+      sha256 = lock.nodes.flake-compat.locked.narHash;
+    }
+  )
+  {
+    src = ./.;
+  }).defaultNix

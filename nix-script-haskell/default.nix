@@ -1,29 +1,30 @@
-{ sources ? import ../nix/sources.nix { }, pkgs ? import sources.nixpkgs { }
-, pinnedPkgs ? sources.nixpkgs, ... }:
-let
-  gitignore = pkgs.callPackage sources.gitignore { };
+{ stdenv, lib, makeWrapper, haskellPackages }:
 
-  nix-script = pkgs.callPackage ../nix-script { inherit pinnedPkgs; };
-  nix-script-haskell = pkgs.haskellPackages.callCabal2nix "nix-script-haskell"
-    (gitignore.gitignoreSource ./.) { };
-in pkgs.stdenv.mkDerivation {
+stdenv.mkDerivation
+{
   name = "nix-script-haskell";
 
-  src = gitignore.gitignoreSource ./.;
+  src = ./.;
 
-  buildInputs = [ pkgs.makeWrapper ];
+  buildInputs = [ makeWrapper ];
   buildPhase = "true";
 
   doCheck = true;
-  checkInputs = [ pkgs.haskellPackages.hlint ];
+
+  checkInputs = [ haskellPackages.hlint ];
+
   checkPhase = ''
     hlint .
   '';
 
   installPhase = ''
+    runHook preInstall
+
     mkdir -p $out/bin
 
-    makeWrapper ${nix-script-haskell}/bin/nix-script-haskell $out/bin/nix-script-haskell \
-      --prefix PATH : ${pkgs.lib.makeBinPath [ nix-script ]}
+    makeWrapper ${haskellPackages.nix-script-haskell}/bin/nix-script-haskell $out/bin/nix-script-haskell \
+      --prefix PATH : ${lib.makeBinPath [ haskellPackages.nix-script ]}
+
+    runHook postInstall
   '';
 }

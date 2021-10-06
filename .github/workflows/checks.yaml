@@ -1,0 +1,41 @@
+name: "Build and Test"
+on:
+  pull_request:
+  push:
+jobs:
+  nix-build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2.3.4
+        with:
+          fetch-depth: 0
+      - uses: cachix/install-nix-action@v14
+        with:
+          install_url: https://github.com/numtide/nix-flakes-installer/releases/download/nix-2.4pre20210604_8e6ee1b/install
+          extra_nix_config: |
+            experimental-features = nix-command flakes
+            system-features = nixos-test benchmark big-parallel kvm recursive-nix
+
+      - uses: cachix/cachix-action@v10
+        with:
+          name: nix-script
+          authToken: "${{ secrets.CACHIX_AUTH_TOKEN }}"
+      # FIXME: Multi-arch IFD issue: callCabal2nix: -> cabal2nix #cabal2nix
+      # https://github.com/NixOS/nix/issues/4265
+      # - name: Run Flake Check
+      #   run: nix -Lv flake check
+      # FIXME:  cannot bootstrap GHC on this platformi (unsuportSystems 8.10.4)
+      # - name: Run Flake Show
+      #   run: nix -Lv flake show
+
+      - name: Build nix-script
+        run: nix -Lv build .#nix-script
+
+      - name: Build nix-script-haskell
+        run: nix -Lv build .#nix-script-haskell
+
+      - name: Build nix-script-bash
+        run: nix -Lv build .#nix-script-bash
+
+      - name: Check Examples
+        run: nix -Lv run .#checks
