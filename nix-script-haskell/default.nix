@@ -1,30 +1,14 @@
-{ stdenv, lib, makeWrapper, haskellPackages }:
-
-stdenv.mkDerivation
-{
-  name = "nix-script-haskell";
-
+{ mkDerivation, base, lib, optparse-applicative, process, relude
+, text
+}:
+mkDerivation {
+  pname = "nix-script-haskell";
+  version = "1.0.0.0";
   src = ./.;
-
-  buildInputs = [ makeWrapper ];
-  buildPhase = "true";
-
-  doCheck = true;
-
-  checkInputs = [ haskellPackages.hlint ];
-
-  checkPhase = ''
-    hlint .
-  '';
-
-  installPhase = ''
-    runHook preInstall
-
-    mkdir -p $out/bin
-
-    makeWrapper ${haskellPackages.nix-script-haskell}/bin/nix-script-haskell $out/bin/nix-script-haskell \
-      --prefix PATH : ${lib.makeBinPath [ haskellPackages.nix-script ]}
-
-    runHook postInstall
-  '';
+  isLibrary = false;
+  isExecutable = true;
+  executableHaskellDepends = [
+    base optparse-applicative process relude text
+  ];
+  license = lib.licenses.bsd3;
 }

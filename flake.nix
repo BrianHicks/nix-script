@@ -41,6 +41,8 @@
           devShell = with pkgs; mkShell {
             buildInputs = [
               nix-script-shell
+              # cd nix-script && cabal2nix ./. > default.nix
+              cabal2nix
             ];
           };
 
@@ -75,13 +77,27 @@
     {
       overlay = final: prev: {
         haskellPackages = prev.haskellPackages.override (old: {
-          overrides = final.lib.composeExtensions (old.overrides or (_: _: { })) (hself: hsuper: {
-            nix-script = prev.haskellPackages.callCabal2nix "nix-script" ./nix-script { };
-            nix-script-haskell = prev.haskellPackages.callCabal2nix "nix-script-haskell" ./nix-script-haskell { };
-          });
+          overrides = final.lib.composeExtensions (old.overrides or (_: _: { }))
+            (hself: hsuper: {
+              nix-script = with final.haskell.lib; generateOptparseApplicativeCompletion "nix-script"
+                (overrideCabal
+                  (
+                    prev.haskellPackages.callPackage ./nix-script { }
+                    #prev.haskellPackages.callCabal2nix "nix-script" ./nix-script { }
+                  )
+                  (drv: {
+                    buildTools = drv.buildTools or [ ] ++ [ final.makeWrapper ];
+                    postInstall = with final;
+                      drv.postInstall or "" + ''
+                        wrapProgram $out/bin/nix-script \
+                        --prefix PATH ":" "${lib.makeBinPath [ nixUnstable ]}"
+                      '';
+                  }));
+              nix-script-haskell = prev.haskellPackages.callPackage ./nix-script-haskell { };
+            });
         });
         nix-script = with final;  haskell.lib.justStaticExecutables haskellPackages.nix-script;
-        nix-script-haskell = prev.callPackage ./nix-script-haskell { };
+        nix-script-haskell = with final;  haskell.lib.justStaticExecutables haskellPackages.nix-script-haskell;
         nix-script-bash = prev.callPackage ./nix-script-bash { };
       };
     };
