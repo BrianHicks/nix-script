@@ -1,32 +1,18 @@
-{ stdenv, makeWrapper, haskellPackages, pkgs, nixUnstable }:
-stdenv.mkDerivation
-{
-
-  name = "nix-script";
-
+{ mkDerivation, base, base16-bytestring, cryptohash-sha256
+, data-fix, directory, filepath, hnix, lib, neat-interpolation
+, optparse-applicative, prettyprinter, process, relude, text
+, utf8-string
+}:
+mkDerivation {
+  pname = "nix-script";
+  version = "1.0.0.0";
   src = ./.;
-
-  buildInputs = [ makeWrapper ];
-
-  buildPhase = "true";
-
-  doCheck = true;
-
-  checkInputs = [ haskellPackages.hlint ];
-
-  checkPhase = ''
-    hlint .
-  '';
-
-  installPhase = ''
-    runHook preInstall
-
-    mkdir -p $out/bin
-
-    makeWrapper ${haskellPackages.nix-script}/bin/nix-script $out/bin/nix-script \
-      --set NIX_PATH nixpkgs=${pkgs} \
-      --prefix PATH : ${pkgs.lib.makeBinPath [ nixUnstable ]}
-
-     runHook postInstall
-  '';
+  isLibrary = false;
+  isExecutable = true;
+  executableHaskellDepends = [
+    base base16-bytestring cryptohash-sha256 data-fix directory
+    filepath hnix neat-interpolation optparse-applicative prettyprinter
+    process relude text utf8-string
+  ];
+  license = lib.licenses.bsd3;
 }

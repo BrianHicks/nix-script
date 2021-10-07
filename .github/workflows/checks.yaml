@@ -25,8 +25,8 @@ jobs:
       # - name: Run Flake Check
       #   run: nix -Lv flake check
       # FIXME:  cannot bootstrap GHC on this platformi (unsuportSystems 8.10.4)
-      # - name: Run Flake Show
-      #   run: nix -Lv flake show
+      - name: Run Flake Show
+        run: nix -Lv flake show
 
       - name: Build nix-script
         run: nix -Lv build .#nix-script
