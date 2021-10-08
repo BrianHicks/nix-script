@@ -41,8 +41,10 @@
           devShell = with pkgs; mkShell {
             buildInputs = [
               nix-script-shell
-              # cd nix-script && cabal2nix ./. > default.nix
-              cabal2nix
+              cabal-install
+              haskellPackages.ormolu
+              haskellPackages.hlint
+              haskellPackages.ghcid
             ];
           };
 
@@ -50,49 +52,64 @@
             checks = utils.lib.mkApp {
               drv = with import nixpkgs { system = "${system}"; };
                 pkgs.writeShellScriptBin "nix-script-example-checks" ''
-                  set -x pipefail
+                  set -xeuo pipefail
                   export PATH=${
                    pkgs.lib.strings.makeBinPath ([
                      pkgs.nixUnstable
                    ] ++ nix-script-shell)}
                     echo "Checking: nix-script"
-                    for i in  ${./.}/nix-script/samples/*; do
-                    nix-script $i
-                    done
+                    cd nix-script
+                    samples/test-has-script-file.hs
+                    samples/test-receives-arguments.hs a b c
+                    samples/test-receives-flags.hs --help
+                    samples/test-has-runtime-input.hs
+                    samples/test-program-name.hs
+                    echo "Checking: nix-script-bash"
+                    cd ../nix-script-bash
+                    samples/hello-world.sh
+                    samples/with-dependencies.sh
                     echo "Checking: nix-script-haskell"
-                    for i in  ${./.}/nix-script-haskell/samples/*; do
-                    nix-script-haskell $i
-                    done
-                    echo "Checking: nix-script-haskell"
-                    for i in  ${./.}/nix-script-bash/samples/*; do
-                    nix-script-bash $i
-                    done
+                    cd ../nix-script-haskell
+                    samples/hello-world.hs
+                    samples/with-dependencies.hs
+                    samples/no-extension
+                    samples/test-receives-flags.hs --help
+                '';
+            };
+            # nix run ./\#cabal2nix for updating cabal2nix files
+            cabal2nix = utils.lib.mkApp {
+              drv = with import nixpkgs { system = "${system}"; };
+                pkgs.writeShellScriptBin "nix-script-cabal2nix" ''
+                  set -xeuo pipefail
+                  export PATH=${pkgs.lib.strings.makeBinPath ([ cabal2nix] )}
+                  cd nix-script && cabal2nix . > default.nix &&
+                  cd ../nix-script-haskell && cabal2nix . > default.nix
                 '';
             };
           };
-
-        }
-      )
+        })
     ) //
     {
       overlay = final: prev: {
         haskellPackages = prev.haskellPackages.override (old: {
           overrides = final.lib.composeExtensions (old.overrides or (_: _: { }))
             (hself: hsuper: {
-              nix-script = with final.haskell.lib; generateOptparseApplicativeCompletion "nix-script"
-                (overrideCabal
-                  (
-                    prev.haskellPackages.callPackage ./nix-script { }
-                    #prev.haskellPackages.callCabal2nix "nix-script" ./nix-script { }
-                  )
-                  (drv: {
-                    buildTools = drv.buildTools or [ ] ++ [ final.makeWrapper ];
-                    postInstall = with final;
-                      drv.postInstall or "" + ''
-                        wrapProgram $out/bin/nix-script \
-                        --prefix PATH ":" "${lib.makeBinPath [ nixUnstable ]}"
-                      '';
-                  }));
+              nix-script = with final.haskell.lib;
+                generateOptparseApplicativeCompletion "nix-script"
+                  (overrideCabal
+                    (
+                      prev.haskellPackages.callPackage ./nix-script { }
+                      #prev.haskellPackages.callCabal2nix "nix-script" ./nix-script { }
+                    )
+                    (drv: {
+                      buildTools = drv.buildTools or [ ] ++ [ final.makeWrapper ];
+                      postInstall = with final;
+                        drv.postInstall or "" + ''
+                          wrapProgram $out/bin/nix-script \
+                          --set NIX_PATH "nixpkgs=${final.path}" \
+                          --prefix PATH ":" "${lib.makeBinPath [ nixUnstable ]}"
+                        '';
+                    }));
               nix-script-haskell = prev.haskellPackages.callPackage ./nix-script-haskell { };
             });
         });
