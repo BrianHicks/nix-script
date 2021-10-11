@@ -29,16 +29,16 @@ jobs:
         run: nix -Lv flake show
 
       - name: Build nix-script
-        run: nix -Lv build .#nix-script
+        run: nix -Lv build '.#nix-script'
 
       - name: Build nix-script-haskell
-        run: nix -Lv build .#nix-script-haskell
+        run: nix -Lv build '.#nix-script-haskell'
 
       - name: Build nix-script-bash
-        run: nix -Lv build .#nix-script-bash
+        run: nix -Lv build '.#nix-script-bash'
 
       - name: Check Examples
-        run: nix -Lv run .#tests
+        run: nix -Lv run '.#tests'
 
       - name: Run linting
-      	run: nix -Lv run .#lint
+      	run: nix -Lv run '.#lint'
