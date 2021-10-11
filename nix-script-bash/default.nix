@@ -1,7 +1,6 @@
 { stdenv, makeWrapper, haskellPackages }:
 
-stdenv.mkDerivation
-{
+stdenv.mkDerivation {
   name = "nix-script-bash";
 
   buildInputs = [ makeWrapper ];
