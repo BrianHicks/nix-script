@@ -47,7 +47,7 @@
 
         apps = {
           checks = utils.lib.mkApp {
-            drv = with import nixpkgs { system = "${system}"; };
+            drv = with import nixpkgs { inherit system; };
               pkgs.writeShellScriptBin "nix-script-example-checks" ''
                 set -xeuo pipefail
                 export PATH=${
@@ -99,12 +99,10 @@
 
           # nix run .#cabal2nix for updating cabal2nix files
           cabal2nix = utils.lib.mkApp {
-            drv = with import nixpkgs { system = "${system}"; };
+            drv = with import nixpkgs { inherit system; };
               pkgs.writeShellScriptBin "nix-script-cabal2nix" ''
                 set -xeuo pipefail
-                export PATH=${
-                  pkgs.lib.strings.makeBinPath ([ cabal2nix nixfmt ])
-                }
+                export PATH=${pkgs.lib.strings.makeBinPath [ cabal2nix nixfmt ]}
 
                 (
                   cd nix-script
