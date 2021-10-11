@@ -39,3 +39,6 @@ jobs:
 
       - name: Check Examples
         run: nix -Lv run .#checks
+
+      - name: Run linting
+      	run: nix -Lv run .#lint
