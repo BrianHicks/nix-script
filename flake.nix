@@ -46,15 +46,16 @@
           };
 
         apps = {
-          checks = utils.lib.mkApp {
+          tests = utils.lib.mkApp {
             drv = with import nixpkgs { inherit system; };
               pkgs.writeShellScriptBin "nix-script-example-checks" ''
                 set -xeuo pipefail
                 export PATH=${
                   pkgs.lib.strings.makeBinPath
-                  ([ pkgs.nixUnstable ] ++ nix-script-shell)
+                  ([ pkgs.nixUnstable findutils coreutils ] ++ nix-script-shell)
                 }
-                  echo "Checking: nix-script"
+
+                (
                   cd nix-script
                   samples/test-has-script-file.hs
                   samples/test-receives-arguments.hs a b c
@@ -62,17 +63,25 @@
                   samples/test-has-runtime-input.hs
                   samples/test-program-name.hs
 
-                  echo "Checking: nix-script-bash"
-                  cd ../nix-script-bash
+                  # regression test: we should not error out if the underlying
+                  # builds get GC'd
+                  find .nix-script-cache -type l | xargs -n 1 readlink | xargs nix-store --delete
+                  samples/test-program-name.hs
+                )
+
+                (
+                  cd nix-script-bash
                   samples/hello-world.sh
                   samples/with-dependencies.sh
+                )
 
-                  echo "Checking: nix-script-haskell"
-                  cd ../nix-script-haskell
+                (
+                  cd nix-script-haskell
                   samples/hello-world.hs
                   samples/with-dependencies.hs
                   samples/no-extension
                   samples/test-receives-flags.hs --help
+                )
               '';
           };
 
