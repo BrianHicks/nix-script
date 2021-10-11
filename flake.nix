@@ -76,6 +76,27 @@
               '';
           };
 
+          # nix run .#lint for checking that source files are lint-free
+          lint = utils.lib.mkApp {
+            drv = with import nixpkgs { inherit system; };
+              pkgs.writeShellScriptBin "nix-script-lint" ''
+                set -xeuo pipefail
+                export PATH=${
+                  pkgs.lib.strings.makeBinPath [
+                    nixfmt
+                    haskellPackages.hlint
+                    findutils
+                  ]
+                }
+
+                nixfmt --check $(find . -name '*.nix')
+
+                ( cd nix-script; hlint . )
+
+                ( cd nix-script-haskell; hlint . )
+              '';
+          };
+
           # nix run .#cabal2nix for updating cabal2nix files
           cabal2nix = utils.lib.mkApp {
             drv = with import nixpkgs { system = "${system}"; };
