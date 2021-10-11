@@ -1,7 +1,7 @@
 { mkDerivation, base, base16-bytestring, cryptohash-sha256
 , data-fix, directory, filepath, hnix, lib, neat-interpolation
-, optparse-applicative, prettyprinter, process, relude, text
-, utf8-string
+, optparse-applicative, prettyprinter, process, relude, temporary
+, text, utf8-string
 }:
 mkDerivation {
   pname = "nix-script";
@@ -12,7 +12,7 @@ mkDerivation {
   executableHaskellDepends = [
     base base16-bytestring cryptohash-sha256 data-fix directory
     filepath hnix neat-interpolation optparse-applicative prettyprinter
-    process relude text utf8-string
+    process relude temporary text utf8-string
   ];
   license = lib.licenses.bsd3;
 }
