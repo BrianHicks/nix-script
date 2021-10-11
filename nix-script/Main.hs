@@ -90,6 +90,7 @@ buildAndRun target args = do
   derivationTemplate <- getDerivationTemplateFor canonicalTarget source
   -- what's our target?
   cacheDir <- getCacheDir
+  Directory.createDirectoryIfMissing True cacheDir
   nixPath <- fromMaybe "" <$> Environment.lookupEnv "NIX_PATH"
   let hash =
         Base16.encode $
