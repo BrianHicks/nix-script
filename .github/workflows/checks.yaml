@@ -38,7 +38,7 @@ jobs:
         run: nix -Lv build .#nix-script-bash
 
       - name: Check Examples
-        run: nix -Lv run .#checks
+        run: nix -Lv run .#tests
 
       - name: Run linting
       	run: nix -Lv run .#lint
