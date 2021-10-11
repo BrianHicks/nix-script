@@ -40,6 +40,7 @@
               haskellPackages.hlint
               haskellPackages.ormolu
               nix-script-shell
+              nixfmt
             ];
           };
 
