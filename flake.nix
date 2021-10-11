@@ -75,14 +75,26 @@
               '';
           };
 
-          # nix run ./\#cabal2nix for updating cabal2nix files
+          # nix run .#cabal2nix for updating cabal2nix files
           cabal2nix = utils.lib.mkApp {
             drv = with import nixpkgs { system = "${system}"; };
               pkgs.writeShellScriptBin "nix-script-cabal2nix" ''
                 set -xeuo pipefail
-                export PATH=${pkgs.lib.strings.makeBinPath ([ cabal2nix ])}
-                cd nix-script && cabal2nix . > default.nix &&
-                cd ../nix-script-haskell && cabal2nix . > default.nix
+                export PATH=${
+                  pkgs.lib.strings.makeBinPath ([ cabal2nix nixfmt ])
+                }
+
+                (
+                  cd nix-script
+                  cabal2nix . > default.nix
+                  nixfmt default.nix
+                )
+
+                (
+                  cd nix-script-haskell
+                  cabal2nix . > default.nix
+                  nixfmt default.nix
+                )
               '';
           };
         };
