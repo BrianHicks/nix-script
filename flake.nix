@@ -35,11 +35,11 @@
         devShell = with pkgs;
           mkShell {
             buildInputs = [
-              nix-script-shell
               cabal-install
-              haskellPackages.ormolu
-              haskellPackages.hlint
               haskellPackages.ghcid
+              haskellPackages.hlint
+              haskellPackages.ormolu
+              nix-script-shell
             ];
           };
 
