@@ -19,6 +19,7 @@
           overlays = [ self.overlay ];
           config = { allowUnsupportedSystem = true; };
         };
+
         nix-script-shell = with pkgs; [
           nix-script
           nix-script-haskell
