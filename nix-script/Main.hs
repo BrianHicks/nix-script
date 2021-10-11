@@ -17,6 +17,7 @@ import qualified System.Exit as Exit
 import System.FilePath.Posix ((</>))
 import qualified System.FilePath.Posix as FilePath
 import qualified System.Process as Process
+import qualified System.IO.Temp as Temp
 
 data Options = Options
   { isShellMode :: Bool,
@@ -106,23 +107,21 @@ buildAndRun target args = do
   case state of
     TargetExists -> pass
     _ -> do
-      builtDerivation <- build cacheTarget derivationTemplate
+      builtDerivation <- build derivationTemplate
       link cacheTarget (builtDerivation </> FilePath.takeFileName canonicalTarget)
 
   -- run the thing
   Environment.setEnv "SCRIPT_FILE" target
   Process.spawnProcess cacheTarget args >>= Process.waitForProcess >>= Exit.exitWith
 
-build :: FilePath -> Text -> IO FilePath
-build destination nixSource = do
-  let dir = FilePath.takeDirectory destination
-  Directory.createDirectoryIfMissing True dir
-  writeFile (dir </> "default.nix") (toString nixSource)
-  outLines <- List.lines <$> Process.readProcess "nix-build" ["--no-out-link", dir] []
-
-  case outLines of
-    [] -> fail "nix-build did not give me a store path. How weird!"
-    first : _ -> pure first
+build :: Text -> IO FilePath
+build nixSource = do
+  Temp.withSystemTempDirectory "nix-script" $ \dir -> do
+    writeFile (dir </> "default.nix") (toString nixSource)
+    outLines <- List.lines <$> Process.readProcess "nix-build" ["--no-out-link", dir] []
+    case outLines of
+      [] -> fail "nix-build did not give me a store path. How weird!"
+      first : _ -> pure first
 
 link :: FilePath -> FilePath -> IO ()
 link destination built = do
