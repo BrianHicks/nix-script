@@ -21,14 +21,14 @@
         };
 
         nix-script-shell = with pkgs; [
-          nix-script
+          nix-script-bin
           nix-script-haskell
           nix-script-bash
           (haskellPackages.ghcWithPackages (p: with p; [ relude ]))
         ];
       in rec {
         packages = {
-          inherit (pkgs) nix-script nix-script-bash nix-script-haskell;
+          inherit (pkgs) nix-script-bin nix-script-bash nix-script-haskell;
         };
 
         defaultPackage = pkgs.nix-script;
@@ -152,7 +152,7 @@
               });
           });
 
-          nix-script = with final;
+          nix-script-bin = with final;
             haskell.lib.justStaticExecutables haskellPackages.nix-script;
 
           nix-script-haskell = with final;
