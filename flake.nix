@@ -31,7 +31,7 @@
           inherit (pkgs) nix-script-bin nix-script-bash nix-script-haskell;
         };
 
-        defaultPackage = pkgs.nix-script;
+        defaultPackage = pkgs.nix-script-bin;
 
         devShell = with pkgs;
           mkShell {

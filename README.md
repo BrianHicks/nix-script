@@ -99,11 +99,19 @@ For example, if you use `niv` that might look like:
 
 ```nix
 let
-  sources = import ./nix/sources.nix { };
-  pkgs = import sources.nixpkgs { };
-in pkgs.mkShell {
-  buildInputs =
-    [ (pkgs.callPackage sources.nix-script { pinnedPkgs = sources.nixpkgs; }) ];
+  pkgs = import
+    (builtins.fetchTarball {
+      url = "https://github.com/NixOS/nixpkgs/tarball/36a05ec28e46d610aab8d05e56e4442c5866b8c7";
+      sha256 = "0g95fbj4h1rsdyd81vfl5cwv9p7hfvmbgfhvp5k1sni73zccikl6";
+    })
+    {
+      overlays = [ nix_script.overlay ];
+    };
+  nix_script = (builtins.getFlake "github:BrianHicks/nix-script");
+in
+pkgs.mkShell
+{
+  buildInputs = [ pkgs.nix-script-bin pkgs.nix-script-haskell pkgs.nix-script-bash ];
 }
 ```
 
