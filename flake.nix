@@ -50,6 +50,7 @@
             drv = with import nixpkgs { inherit system; };
               pkgs.writeShellScriptBin "nix-script-example-checks" ''
                 set -xeuo pipefail
+                export NIX_SCRIPT_CACHE_PATH=".nix-script-cache"
                 export PATH=${
                   pkgs.lib.strings.makeBinPath
                   ([ pkgs.nixUnstable findutils coreutils ] ++ nix-script-shell)
@@ -65,7 +66,9 @@
 
                   # regression test: we should not error out if the underlying
                   # builds get GC'd
-                  find .nix-script-cache -type l | xargs -n 1 readlink | xargs nix-store --delete
+                  find "$NIX_SCRIPT_CACHE_PATH" -type l \
+                    | xargs --no-run-if-empty -n 1 readlink \
+                    | xargs --no-run-if-empty nix-store --delete
                   samples/test-program-name.hs
                 )
 

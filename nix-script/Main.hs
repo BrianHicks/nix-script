@@ -13,6 +13,7 @@ import qualified Nix.Pretty
 import qualified Options.Applicative as Options
 import qualified System.Directory as Directory
 import qualified System.Environment as Environment
+import qualified System.Environment.XDG.BaseDir as XDG
 import qualified System.Exit as Exit
 import System.FilePath.Posix ((</>))
 import qualified System.FilePath.Posix as FilePath
@@ -160,7 +161,7 @@ symlinkState target = do
 
 getCacheDir :: IO FilePath
 getCacheDir =
-  fromMaybe ".nix-script-cache" <$> Environment.lookupEnv "NIX_SCRIPT_CACHE_PATH"
+  maybe (XDG.getUserCacheDir "nix-script") pure =<< Environment.lookupEnv "NIX_SCRIPT_CACHE_PATH"
 
 getDerivationTemplateFor :: FilePath -> Text -> IO Text
 getDerivationTemplateFor canonicalTarget source = do
