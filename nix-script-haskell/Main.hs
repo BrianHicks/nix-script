@@ -38,23 +38,22 @@ optionsParser =
 main :: IO ()
 main = do
   options <- Options.execParser optionsParser
+  haskellPackages <- getHaskellPackages (target options)
+  ghcFlags <- getGhcFlags (target options)
   if isGhcidMode options
     then do
       Environment.setEnv "RUNTIME_INPUTS" "haskellPackages.ghcid"
       Environment.setEnv "SHELL_RUN" ("ghcid " ++ target options)
-      haskellPackages <- getHaskellPackages (target options)
-      callNixScript haskellPackages ["--shell", target options]
+      callNixScript haskellPackages ghcFlags ["--shell", target options]
     else
       if isShellMode options
         then do
-          haskellPackages <- getHaskellPackages (target options)
-          callNixScript haskellPackages ("--shell" : target options : args options)
+          callNixScript haskellPackages ghcFlags ("--shell" : target options : args options)
         else do
-          haskellPackages <- getHaskellPackages (target options)
-          callNixScript haskellPackages (target options : args options)
+          callNixScript haskellPackages ghcFlags (target options : args options)
 
-callNixScript :: [Text] -> [String] -> IO ()
-callNixScript haskellPackages args = do
+callNixScript :: [Text] -> [Text] -> [String] -> IO ()
+callNixScript haskellPackages flags args = do
   Environment.setEnv
     "BUILD_INPUTS"
     ( "(haskellPackages.ghcWithPackages (ps: with ps; ["
@@ -64,7 +63,12 @@ callNixScript haskellPackages args = do
   -- We have to add a `.hs` extension if it isn't present because otherwise
   -- Haskell thinks we're trying to compile a named module instead of a file
   -- in cases where the script file does not have an extension.
-  Environment.setEnv "BUILD_COMMAND" "mv $SCRIPT_FILE $SCRIPT_FILE.hs && ghc -O -o $OUT_FILE $SCRIPT_FILE.hs"
+  Environment.setEnv
+    "BUILD_COMMAND"
+    ( "mv $SCRIPT_FILE $SCRIPT_FILE.hs && ghc -O "
+        ++ toString (Text.intercalate " " flags)
+        ++ " -o $OUT_FILE $SCRIPT_FILE.hs"
+    )
   Process.spawnProcess "nix-script" args
     >>= Process.waitForProcess
     >>= Exit.exitWith
@@ -73,3 +77,8 @@ getHaskellPackages :: FilePath -> IO [Text]
 getHaskellPackages target = do
   sourceLines <- lines <$> readFileText target
   pure $ mapMaybe (Text.stripPrefix "#!haskellPackages ") sourceLines
+
+getGhcFlags :: FilePath -> IO [Text]
+getGhcFlags target = do
+  sourceLines <- lines <$> readFileText target
+  pure $ mapMaybe (Text.stripPrefix "#!ghcFlags ") sourceLines
