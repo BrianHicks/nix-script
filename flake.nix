@@ -84,6 +84,7 @@
                   samples/with-dependencies.hs
                   samples/no-extension
                   samples/test-receives-flags.hs --help
+                  samples/test-ghc-flags.hs
                 )
               '';
           };
