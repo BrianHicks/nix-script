@@ -1,6 +1,13 @@
 #!/usr/bin/env nix-script-haskell
-#!ghcFlags -XNumericUnderscores
+#!ghcFlags -threaded
+
+import Control.Concurrent
+import System.Exit
 
 main :: IO ()
 main = do
-  putStrLn $ "This is a number: " ++ show 123_456
+  if rtsSupportsBoundThreads
+    then putStrLn "Success! Bound threads are supported"
+    else do
+      putStrLn "Failure! Bound threads are not supported"
+      exitFailure
