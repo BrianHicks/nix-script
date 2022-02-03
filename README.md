@@ -72,24 +72,16 @@ This is quicker than using `nix-shell` shebangs because the runtime environment 
 ### `nix-script-haskell`
 
 `nix-script-haskell` is a convenience wrapper for Haskell scripts.
-In addition to the regular `nix-script` options, this lets you specify `#!haskellPackages`, which should be a space-separated list of Haskell packages (you can get a list of available names by running `nix-env -qaPA nixpkgs.haskellPackages`.)
-For example:
+In addition to the regular `nix-script` options, `nix-script-haskell` lets you specify some Haskell-specific options:
 
-```haskell
-#!/usr/bin/env nix-script-haskell
-#!haskellPackages text
-
-{-# LANGUAGE OverloadedStrings #-}
-
-import Data.Text.IO
-
-main :: IO ()
-main = Data.Text.IO.putStrLn "Hello, World!"
-```
+| Shebang line        | Notes                                                                                                                      | Example                        |
+|---------------------|----------------------------------------------------------------------------------------------------------------------------|--------------------------------|
+| `#!haskellPackages` | Haskell packages to build with (you can get a list of available names by running `nix-env -qaPA nixpkgs.haskellPackages`.) | `#!haskellPackages text aeson` |
+| `#!ghcFlags`        | Additional flags to pass to the compiler.                                                                                  | `#!ghcFlags -threaded`         |
 
 Unlike other shebang options, `#!haskellPackages` does not have an equivalent setting in the environment.
 
-You can get quick compilation feedback by running `nix-script-haskell --ghcid path/to/your/script.hs`.
+You can get quick compilation feedback with [`ghcid`](https://github.com/ndmitchell/ghcid) by running `nix-script-haskell --ghcid path/to/your/script.hs`.
 
 ## Controlling `nixpkgs` version
 
