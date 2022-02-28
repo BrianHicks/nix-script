@@ -12,6 +12,12 @@ You might have guessed this already, but you can install this package with `nix`
 nix-env -if https://github.com/BrianHicks/nix-script/archive/main.tar.gz
 ```
 
+NB: This will only install `nix-script` itself. To install e.g. `nix-script-haskell`, use:
+
+```
+nix-env -f https://github.com/BrianHicks/nix-script/archive/main.tar.gz -iA packages.x86_64-linux.nix-script-haskell
+```
+
 You probably should use [`niv`](https://github.com/nmattia/niv) or similar, though!
 Once you do, you can control the version of `nixpkgs` you use (see "[Controlling `nixpkgs` version](#controlling-nixpkgs-version)" below.)
 
