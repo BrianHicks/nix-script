@@ -1,37 +1,39 @@
 mod input;
 mod inputs;
 use std::fmt::{self, Display};
+use std::path::Path;
 
 use input::Input;
 use inputs::Inputs;
 
 #[derive(Debug)]
-pub struct Derivation {
+pub struct Derivation<'path> {
     inputs: Inputs,
-    name: String,
-    src: String,
+    src: &'path Path,
 }
 
-impl Derivation {
-    pub fn new(name: String, src: String) -> Self {
+impl<'path> Derivation<'path> {
+    pub fn new(src: &'path Path) -> Self {
         Self {
             inputs: Inputs::new(vec![Input::new(
                 "pkgs".into(),
                 Some("import <nixpkgs> { }".into()),
             )]),
-            name,
             src,
         }
     }
 }
-impl Display for Derivation {
+impl Display for Derivation<'_> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> Result<(), fmt::Error> {
         write!(
             f,
             "{}:\n{{\n  name = \"{}\";\n  src = {};\n}}",
-            self.inputs.to_string(),
-            self.name,
-            self.src,
+            self.inputs,
+            self.src
+                .file_name()
+                .and_then(|name| name.to_str())
+                .unwrap_or("UNKNOWN"),
+            self.src.display(),
         )
     }
 }
@@ -42,14 +44,17 @@ mod tests {
 
     mod to_string {
         use super::*;
+        use std::path::PathBuf;
 
         #[test]
         fn empty() {
+            let path: PathBuf = [".", "path", "to", "my", "cool-script"].iter().collect();
+
             assert_eq!(
                 String::from(
-                    "{ pkgs ? import <nixpkgs> { } }:\n{\n  name = \"cool-script\";\n  src = ./.;\n}"
+                    "{ pkgs ? import <nixpkgs> { } }:\n{\n  name = \"cool-script\";\n  src = ./path/to/my/cool-script;\n}"
                 ),
-                Derivation::new("cool-script".into(), "./.".into()).to_string(),
+                Derivation::new(&path).to_string(),
             )
         }
     }
