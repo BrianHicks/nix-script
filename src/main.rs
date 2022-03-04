@@ -10,7 +10,8 @@ struct Opts {
     /// The script to run
     script: PathBuf,
 
-    /// Args to pass on to the script
+    /// Any positional arguments after the script name will be passed on to
+    /// the script.
     script_args: Vec<String>,
 }
 
