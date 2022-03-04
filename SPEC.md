@@ -75,7 +75,7 @@ In `nix-script` version 1, we also accepted environment variables like `BUILD_CO
 These were mostly useful for writing wrapper scripts, but in `nix-script` version 2, we do that differently.
 However, if this ends up being something that breaks your workflow please open an issue and we'll see what we can do here.
 
-## Lifting inputs
+### Lifting inputs
 
 *status: partially defined*
 
@@ -84,7 +84,7 @@ To do this, we parse these shebangs as a list.
 Items that are expressions are left alone and items that appear to be references are lifted to the inputs.
 (The mechanism to do this is not precisely determined as of this writing!)
 
-## Exporting
+### Exporting
 
 *status: speculative*
 
