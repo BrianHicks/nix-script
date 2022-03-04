@@ -1,13 +1,26 @@
 {
   inputs = {
-    nixpkgs.url = "github:NixOS/nixpkgs/nixpkgs-unstable";
     flake-utils.url = "github:numtide/flake-utils";
+    naersk.url = "github:nmattia/naersk";
+    nixpkgs.url = "github:NixOS/nixpkgs/nixpkgs-unstable";
   };
 
   outputs = inputs:
     inputs.flake-utils.lib.eachDefaultSystem (system:
-      let pkgs = import inputs.nixpkgs { inherit system; };
-      in {
+      let
+        pkgs = import inputs.nixpkgs { inherit system; };
+        naersk-lib = inputs.naersk.lib."${system}";
+      in rec {
+        packages.nix-script = naersk-lib.buildPackage {
+          root = ./.;
+
+          doCheck = true;
+          checkPhase = "cargo test";
+        };
+
+        defaultPackage = packages.nix-script;
+        overlay = final: prev: { nix-script = packages.nix-script; };
+
         devShell = pkgs.mkShell {
           packages = [
             # rust
