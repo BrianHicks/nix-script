@@ -64,7 +64,7 @@ pkgs.stdenv.mkDerivation {
 }
 ```
 
-You can also control these settings with flags (e.g. `nix-script --runtime-inputs jq`)
+You can also control these settings with flags (e.g. `nix-script --runtime-inputs jq`.)
 Command-line arguments always take precedence, then shebangs.
 
 ### What about environment variables?
