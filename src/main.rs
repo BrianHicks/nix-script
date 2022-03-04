@@ -1,3 +1,4 @@
+mod derivation;
 mod directive;
 
 use anyhow::{Context, Result};
