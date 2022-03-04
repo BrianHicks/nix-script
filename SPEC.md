@@ -67,6 +67,18 @@ pkgs.stdenv.mkDerivation {
 You can also control these settings with flags (e.g. `nix-script --runtime-inputs jq`.)
 Command-line arguments always take precedence, then shebangs.
 
+### Keys Accepted
+
+*status: partially defined* (needs thought on extra files)
+
+| `#!` line         | Meaning                                      | Notes                                                                                                                |
+|-------------------|----------------------------------------------|----------------------------------------------------------------------------------------------------------------------|
+| `#!build`         | build command for script                     | should read from `$INPUT` and write to `$OUTPUT`. Will be run in the source directory.                               |
+| `#!buildInputs`   | build inputs, as a Nix list                  | e.g. `buildInputs = [ the-thing-you-specify ];`.                                                                     |
+| `#!runtimeInputs` | runtime inputs, as a Nix list                | see note on `buildInputs`.                                                                                           |
+| `#!interpreter`   | interpret "built" binary with this script    | Must be a binary which accepts at least one argument (the build source). Binary must be provided by `runtimeInputs`. |
+| `#!extraSrc`      | a file or directory to include at build time | multiple calls will be merged. Key name still up in the air.                                                         |
+
 ### What about environment variables?
 
 *status: speculative*
