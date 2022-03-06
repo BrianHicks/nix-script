@@ -15,7 +15,7 @@ pub struct Derivation<'path> {
 impl<'path> Derivation<'path> {
     pub fn new(src: &'path Path) -> Self {
         Self {
-            inputs: Inputs::new(vec![Input::new(
+            inputs: Inputs::from(vec![Input::new(
                 "pkgs".into(),
                 Some("import <nixpkgs> { }".into()),
             )]),
