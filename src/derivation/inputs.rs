@@ -28,6 +28,7 @@ impl Display for Inputs {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::derivation::tests::assert_no_errors;
 
     mod to_string {
         use super::*;
@@ -54,7 +55,7 @@ mod tests {
 
         #[test]
         fn with_one_valid() {
-            crate::derivation::tests::assert_no_errors(&format!(
+            assert_no_errors(&format!(
                 "{}: 1",
                 Inputs::from(vec![Input::new("pkgs".into(), None)])
             ))
@@ -62,7 +63,7 @@ mod tests {
 
         #[test]
         fn with_many_valid() {
-            crate::derivation::tests::assert_no_errors(&format!(
+            assert_no_errors(&format!(
                 "{}: 1",
                 Inputs::from(vec![
                     Input::new("pkgs".into(), None),

@@ -27,6 +27,7 @@ impl Display for Input {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::derivation::tests::assert_no_errors;
 
     mod to_string {
         use super::*;
@@ -49,12 +50,12 @@ mod tests {
 
         #[test]
         fn no_default_valid() {
-            crate::derivation::tests::assert_no_errors(&Input::new("pkgs".into(), None).to_string())
+            assert_no_errors(&Input::new("pkgs".into(), None).to_string())
         }
 
         #[test]
         fn test_default_valid() {
-            crate::derivation::tests::assert_no_errors(
+            assert_no_errors(
                 &Input::new("pkgs".into(), Some("import <nixpkgs> { }".into())).to_string(),
             );
         }
