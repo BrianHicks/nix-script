@@ -42,6 +42,11 @@ impl Display for Derivation<'_> {
 mod tests {
     use super::*;
 
+    pub fn assert_no_errors(src: &str) {
+        let empty: Vec<rnix::parser::ParseError> = Vec::new();
+        assert_eq!(empty, rnix::parse(src).errors())
+    }
+
     mod to_string {
         use super::*;
         use std::path::PathBuf;

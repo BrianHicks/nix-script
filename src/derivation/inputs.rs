@@ -49,5 +49,24 @@ mod tests {
                 .to_string(),
             )
         }
+
+        #[test]
+        fn with_one_valid() {
+            crate::derivation::tests::assert_no_errors(&format!(
+                "{}: 1",
+                Inputs::new(vec![Input::new("pkgs".into(), None)])
+            ))
+        }
+
+        #[test]
+        fn with_many_valid() {
+            crate::derivation::tests::assert_no_errors(&format!(
+                "{}: 1",
+                Inputs::new(vec![
+                    Input::new("pkgs".into(), None),
+                    Input::new("jq".into(), Some("pkgs.jq".into()))
+                ])
+            ))
+        }
     }
 }
