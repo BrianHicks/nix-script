@@ -46,5 +46,17 @@ mod tests {
                 Input::new("pkgs".into(), Some("import <nixpkgs> { }".into())).to_string(),
             )
         }
+
+        #[test]
+        fn no_default_valid() {
+            crate::derivation::tests::assert_no_errors(&Input::new("pkgs".into(), None).to_string())
+        }
+
+        #[test]
+        fn test_default_valid() {
+            crate::derivation::tests::assert_no_errors(
+                &Input::new("pkgs".into(), Some("import <nixpkgs> { }".into())).to_string(),
+            );
+        }
     }
 }
