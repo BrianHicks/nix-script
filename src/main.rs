@@ -31,7 +31,8 @@ impl Opts {
 
         println!("{:#?}", directive_parser.parse(&source));
 
-        let derivation = Derivation::new(&self.script);
+        let derivation =
+            Derivation::new(&self.script).context("could not create a Nix derivation")?;
         println!("{:#?}", derivation);
         println!("{}", derivation);
 

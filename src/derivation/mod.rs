@@ -1,26 +1,33 @@
 mod input;
 mod inputs;
-use std::fmt::{self, Display};
-use std::path::Path;
 
+use anyhow::{Context, Result};
 use input::Input;
 use inputs::Inputs;
+use std::fmt::{self, Display};
+use std::path::Path;
 
 #[derive(Debug)]
 pub struct Derivation<'path> {
     inputs: Inputs,
+
+    name: &'path str,
     src: &'path Path,
 }
 
 impl<'path> Derivation<'path> {
-    pub fn new(src: &'path Path) -> Self {
-        Self {
+    pub fn new(src: &'path Path) -> Result<Self> {
+        Ok(Self {
             inputs: Inputs::from(vec![Input::new(
                 "pkgs".into(),
                 Some("import <nixpkgs> { }".into()),
             )]),
-            src,
-        }
+            name: src
+                .file_name()
+                .and_then(|name| name.to_str())
+                .context("could not determine derivation name from input path")?,
+            src: src,
+        })
     }
 }
 impl Display for Derivation<'_> {
@@ -29,10 +36,7 @@ impl Display for Derivation<'_> {
             f,
             "{}:\n{{\n  name = \"{}\";\n  src = {};\n}}",
             self.inputs,
-            self.src
-                .file_name()
-                .and_then(|name| name.to_str())
-                .unwrap_or("UNKNOWN"),
+            self.name,
             self.src.display(),
         )
     }
@@ -59,7 +63,7 @@ mod tests {
                 String::from(
                     "{ pkgs ? import <nixpkgs> { } }:\n{\n  name = \"cool-script\";\n  src = ./path/to/my/cool-script;\n}"
                 ),
-                Derivation::new(&path).to_string(),
+                Derivation::new(&path).unwrap().to_string(),
             )
         }
     }
