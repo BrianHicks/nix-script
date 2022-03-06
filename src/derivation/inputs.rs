@@ -1,14 +1,16 @@
 use super::input::Input;
+use std::convert::From;
 use std::fmt::{self, Display};
 
 #[derive(Debug)]
 pub struct Inputs(Vec<Input>);
 
-impl Inputs {
-    pub fn new(inputs: Vec<Input>) -> Self {
+impl From<Vec<Input>> for Inputs {
+    fn from(inputs: Vec<Input>) -> Self {
         Inputs(inputs)
     }
 }
+
 impl Display for Inputs {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> Result<(), fmt::Error> {
         write!(
@@ -34,7 +36,7 @@ mod tests {
         fn with_one() {
             assert_eq!(
                 String::from("{ pkgs }"),
-                Inputs::new(vec![Input::new("pkgs".into(), None)]).to_string(),
+                Inputs::from(vec![Input::new("pkgs".into(), None)]).to_string(),
             )
         }
 
@@ -42,7 +44,7 @@ mod tests {
         fn with_many() {
             assert_eq!(
                 String::from("{ pkgs, jq ? pkgs.jq }"),
-                Inputs::new(vec![
+                Inputs::from(vec![
                     Input::new("pkgs".into(), None),
                     Input::new("jq".into(), Some("pkgs.jq".into()))
                 ])
@@ -54,7 +56,7 @@ mod tests {
         fn with_one_valid() {
             crate::derivation::tests::assert_no_errors(&format!(
                 "{}: 1",
-                Inputs::new(vec![Input::new("pkgs".into(), None)])
+                Inputs::from(vec![Input::new("pkgs".into(), None)])
             ))
         }
 
@@ -62,7 +64,7 @@ mod tests {
         fn with_many_valid() {
             crate::derivation::tests::assert_no_errors(&format!(
                 "{}: 1",
-                Inputs::new(vec![
+                Inputs::from(vec![
                     Input::new("pkgs".into(), None),
                     Input::new("jq".into(), Some("pkgs.jq".into()))
                 ])
