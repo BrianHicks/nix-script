@@ -1,5 +1,7 @@
+mod derivation;
 mod directive;
 
+use crate::derivation::Derivation;
 use anyhow::{Context, Result};
 use clap::Parser;
 use std::fs;
@@ -28,6 +30,11 @@ impl Opts {
         let source = fs::read_to_string(&self.script).context("could not read script")?;
 
         println!("{:#?}", directive_parser.parse(&source));
+
+        let derivation =
+            Derivation::new(&self.script).context("could not create a Nix derivation")?;
+        println!("{:#?}", derivation);
+        println!("{}", derivation);
 
         Ok(())
     }
