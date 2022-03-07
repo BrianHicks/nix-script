@@ -17,23 +17,30 @@ impl Parser {
         })
     }
 
-    pub fn parse<'a>(&self, source: &'a str) -> HashMap<&'a str, &'a str> {
-        source
-            .lines()
-            .flat_map(|line| {
-                if line.starts_with(&self.indicator) {
-                    let without_indicator = line[self.indicator.len()..].trim_start();
-                    let mut words = without_indicator.split(' ');
+    pub fn parse<'a>(&self, source: &'a str) -> HashMap<&'a str, Vec<&'a str>> {
+        let mut out = HashMap::new();
 
-                    words
-                        .next()
-                        .map(|first| (first, without_indicator[first.len()..].trim_start()))
-                } else {
-                    None
+        for line in source.lines() {
+            if !line.starts_with(&self.indicator) {
+                continue;
+            }
+
+            let without_indicator = line[self.indicator.len()..].trim_start();
+            let mut words = without_indicator.split(' ');
+
+            if let Some(key) = words.next() {
+                let value = without_indicator[key.len()..].trim_start();
+
+                if value.is_empty() {
+                    continue;
                 }
-            })
-            .filter(|(_, v)| !v.is_empty())
-            .collect()
+
+                let entry = out.entry(key).or_insert_with(|| Vec::new());
+                entry.push(value);
+            }
+        }
+
+        return out;
     }
 }
 
@@ -74,14 +81,14 @@ mod tests {
         fn matches_shebangs() {
             let directives = Parser::new("#!").unwrap().parse("#!buildInputs jq");
 
-            assert_eq!(Some(&"jq"), directives.get("buildInputs"));
+            assert_eq!(Some(&vec!["jq"]), directives.get("buildInputs"));
         }
 
         #[test]
         fn matches_comment_chars() {
             let directives = Parser::new("//").unwrap().parse("// buildInputs jq");
 
-            assert_eq!(Some(&"jq"), directives.get("buildInputs"));
+            assert_eq!(Some(&vec!["jq"]), directives.get("buildInputs"));
         }
 
         #[test]
@@ -89,6 +96,15 @@ mod tests {
             let directives = Parser::new("#!").unwrap().parse("#!buildInputs");
 
             assert_eq!(None, directives.get("buildInputs"));
+        }
+
+        #[test]
+        fn combines_multiple_lines() {
+            let directives = Parser::new("#!")
+                .unwrap()
+                .parse("#!buildInputs a\n#!buildInputs b");
+
+            assert_eq!(Some(&vec!["a", "b"]), directives.get("buildInputs"));
         }
     }
 }
