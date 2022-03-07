@@ -53,7 +53,7 @@ mod tests {
         }
     }
 
-    mod from_string {
+    mod parse {
         use super::*;
 
         #[test]
