@@ -1,7 +1,8 @@
 mod derivation;
-mod directive;
+mod directives;
 
 use crate::derivation::Derivation;
+use crate::directives::Directives;
 use anyhow::{Context, Result};
 use clap::Parser;
 use std::fs;
@@ -24,12 +25,13 @@ struct Opts {
 
 impl Opts {
     fn run(&self) -> Result<()> {
-        let directive_parser = directive::Parser::new(&self.indicator)
-            .context("could not construct a directive parser")?;
-
         let source = fs::read_to_string(&self.script).context("could not read script")?;
 
-        println!("{:#?}", directive_parser.parse(&source));
+        println!(
+            "{:#?}",
+            Directives::parse(&self.indicator, &source)
+                .context("could not construct a directive parser")?
+        );
 
         let derivation =
             Derivation::new(&self.script).context("could not create a Nix derivation")?;
