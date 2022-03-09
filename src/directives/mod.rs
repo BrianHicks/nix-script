@@ -2,12 +2,13 @@ mod parser;
 
 use anyhow::{Context, Result};
 use rnix::types::Root;
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 
 #[derive(Debug)]
 pub struct Directives<'src> {
     build: Option<&'src str>,
-    buildInputs: Vec<NixExpr<'src>>,
+    buildInputs: Option<NixExpr>,
+    runtimeInputs: Option<NixExpr>,
 }
 
 impl<'src> Directives<'src> {
@@ -34,24 +35,36 @@ impl<'src> Directives<'src> {
         // buildInputs (many)
         let buildInputs = fields
             .get("buildInputs")
-            .map(|arr| arr.iter().map(|line| NixExpr::parse(line)).collect())
-            .unwrap_or_else(|| Vec::new());
+            .map(|lines| NixExpr::as_list_from_lines(lines));
 
-        Ok(Directives { build, buildInputs })
+        // runtimeInputs (many)
+        let runtimeInputs = fields
+            .get("runtimeInputs")
+            .map(|lines| NixExpr::as_list_from_lines(lines));
+
+        Ok(Directives {
+            build,
+            buildInputs,
+            runtimeInputs,
+        })
     }
 }
 
 #[derive(Debug)]
-pub struct NixExpr<'src> {
-    raw: &'src str,
+pub struct NixExpr {
+    raw: String,
     parsed: Root,
 }
 
-impl<'src> NixExpr<'src> {
-    pub fn parse(source: &'src str) -> Self {
+impl<'src> NixExpr {
+    pub fn parse(source: &str) -> Self {
         NixExpr {
-            raw: source,
+            raw: source.to_string(),
             parsed: rnix::parse(source).root(),
         }
+    }
+
+    pub fn as_list_from_lines(sources: &Vec<&str>) -> Self {
+        Self::parse(&format!("[{}]", sources.join(" ")))
     }
 }
