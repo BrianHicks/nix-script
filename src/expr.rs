@@ -1,6 +1,6 @@
 use anyhow::{Context, Result};
 use rnix::types::{List, TypedNode, Wrapper};
-use rnix::SyntaxNode;
+use rnix::{SyntaxKind, SyntaxNode};
 
 #[derive(Debug)]
 pub struct Expr {
@@ -15,7 +15,9 @@ impl Expr {
             parsed: rnix::parse(source)
                 .as_result()
                 .context("failed to parse the source")?
-                .node(),
+                .root()
+                .inner()
+                .context("root node did not have an inner node")?,
         })
     }
 
@@ -35,6 +37,13 @@ impl Expr {
                 })
                 .collect(),
         )
+    }
+
+    pub fn is_extractable(&self) -> bool {
+        match self.parsed.kind() {
+            SyntaxKind::NODE_IDENT => true,
+            _ => false,
+        }
     }
 }
 
@@ -94,6 +103,22 @@ mod tests {
             assert_eq!(2, parsed.len());
             assert_eq!("a", parsed[0].raw);
             assert_eq!("b", parsed[1].raw);
+        }
+    }
+
+    mod is_extractable {
+        use super::*;
+
+        #[test]
+        fn ident_yes() {
+            let parsed = Expr::parse("a").unwrap();
+            assert!(parsed.is_extractable());
+        }
+
+        #[test]
+        fn call_no() {
+            let parsed = Expr::parse("haskellPackages.ghcWithPackages (ps: [ ps.text ])").unwrap();
+            assert!(!parsed.is_extractable());
         }
     }
 }

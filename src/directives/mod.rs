@@ -32,22 +32,22 @@ impl<'src> Directives<'src> {
             None => None,
         };
 
-        // buildInputs (many)
-        let build_inputs = fields
-            .get("buildInputs")
-            .map(|lines| Expr::parse_as_list(&lines.join(" ")))
-            .unwrap_or_else(|| Vec::new());
+        // // buildInputs (many)
+        // let build_inputs = fields
+        //     .get("buildInputs")
+        //     .map(|lines| Expr::parse_as_list(&lines.join(" ")))
+        //     .unwrap_or_else(|| Vec::new());
 
-        // runtimeInputs (many)
-        let runtime_inputs = fields
-            .get("runtimeInputs")
-            .map(|lines| Expr::parse_as_list(&lines.join(" ")))
-            .unwrap_or_else(|| Vec::new());
+        // // runtimeInputs (many)
+        // let runtime_inputs = fields
+        //     .get("runtimeInputs")
+        //     .map(|lines| Expr::parse_as_list(&lines.join(" ")))
+        //     .unwrap_or_else(|| Vec::new());
 
         Ok(Directives {
             build,
-            build_inputs,
-            runtime_inputs,
+            build_inputs: vec![],
+            runtime_inputs: vec![],
         })
     }
 }
