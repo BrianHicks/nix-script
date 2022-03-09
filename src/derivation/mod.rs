@@ -3,7 +3,7 @@ mod inputs;
 use crate::expr::Expr;
 use anyhow::{Context, Result};
 use inputs::Inputs;
-use std::collections::HashSet;
+use std::collections::BTreeSet;
 use std::fmt::{self, Display};
 use std::path::Path;
 
@@ -14,8 +14,8 @@ pub struct Derivation<'path> {
     name: &'path str,
     src: &'path Path,
 
-    build_inputs: HashSet<Expr>,
-    runtime_inputs: HashSet<Expr>,
+    build_inputs: BTreeSet<Expr>,
+    runtime_inputs: BTreeSet<Expr>,
 }
 
 impl<'path> Derivation<'path> {
@@ -27,8 +27,8 @@ impl<'path> Derivation<'path> {
                 .and_then(|name| name.to_str())
                 .context("could not determine derivation name from input path")?,
             src: src,
-            build_inputs: HashSet::new(),
-            runtime_inputs: HashSet::new(),
+            build_inputs: BTreeSet::new(),
+            runtime_inputs: BTreeSet::new(),
         })
     }
 
@@ -60,11 +60,27 @@ impl Display for Derivation<'_> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> Result<(), fmt::Error> {
         write!(
             f,
-            "{}:\n{{\n  name = \"{}\";\n  src = {};\n}}",
+            "{}:\n{{\n  name = \"{}\";\n  src = {};\n",
             self.inputs,
             self.name,
             self.src.display(),
-        )
+        )?;
+
+        if self.build_inputs.len() > 0 {
+            write!(f, "\n  buildInputs = [")?;
+
+            for input in &self.build_inputs {
+                if input.needs_parens_in_list() {
+                    write!(f, " ({})", input)?;
+                } else {
+                    write!(f, " {}", input)?;
+                }
+            }
+
+            write!(f, " ];\n")?;
+        }
+
+        write!(f, "}}")
     }
 }
 
@@ -79,6 +95,7 @@ mod tests {
 
     mod to_string {
         use super::*;
+        use crate::expr::Expr;
         use std::path::PathBuf;
 
         #[test]
@@ -90,6 +107,23 @@ mod tests {
                     "{ pkgs ? import <nixpkgs> { } }:\n{\n  name = \"cool-script\";\n  src = ./path/to/my/cool-script;\n}"
                 ),
                 Derivation::new(&path).unwrap().to_string(),
+            )
+        }
+
+        #[test]
+        fn with_build_inputs() {
+            let path = PathBuf::from("./X");
+            let mut derivation = Derivation::new(&path).unwrap();
+            derivation.add_build_inputs(vec![
+                Expr::parse("jq").unwrap(),
+                Expr::parse("bash").unwrap(),
+            ]);
+
+            assert_eq!(
+                String::from(
+                    "{ bash ? pkgs.bash, jq ? pkgs.jq, pkgs ? import <nixpkgs> { } }:\n{\n  name = \"X\";\n  src = ./X;\n\n  buildInputs = [ bash jq ];\n}"
+                ),
+                derivation.to_string(),
             )
         }
     }
