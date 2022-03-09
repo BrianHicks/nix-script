@@ -3,7 +3,7 @@ use rnix::types::{List, TypedNode, Wrapper};
 use rnix::{SyntaxKind, SyntaxNode};
 use std::fmt::{self, Display};
 
-#[derive(Debug)]
+#[derive(Debug, Eq, Hash)]
 pub struct Expr {
     raw: String,
     parsed: SyntaxNode,

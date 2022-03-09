@@ -3,6 +3,7 @@ mod inputs;
 use crate::expr::Expr;
 use anyhow::{Context, Result};
 use inputs::Inputs;
+use std::collections::HashSet;
 use std::fmt::{self, Display};
 use std::path::Path;
 
@@ -13,7 +14,7 @@ pub struct Derivation<'path> {
     name: &'path str,
     src: &'path Path,
 
-    build_inputs: Vec<Expr>,
+    build_inputs: HashSet<Expr>,
 }
 
 impl<'path> Derivation<'path> {
@@ -25,7 +26,7 @@ impl<'path> Derivation<'path> {
                 .and_then(|name| name.to_str())
                 .context("could not determine derivation name from input path")?,
             src: src,
-            build_inputs: Vec::new(),
+            build_inputs: HashSet::new(),
         })
     }
 
@@ -37,7 +38,7 @@ impl<'path> Derivation<'path> {
                     Some(format!("pkgs.{}", build_input)),
                 );
             }
-            self.build_inputs.push(build_input); // TODO: uniqueness check
+            self.build_inputs.insert(build_input);
         }
     }
 }
