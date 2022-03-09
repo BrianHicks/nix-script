@@ -1,6 +1,7 @@
 use anyhow::{Context, Result};
 use rnix::types::{List, TypedNode, Wrapper};
 use rnix::{SyntaxKind, SyntaxNode};
+use std::fmt::{self, Display};
 
 #[derive(Debug)]
 pub struct Expr {
@@ -70,6 +71,12 @@ impl Expr {
             SyntaxKind::NODE_IDENT => false,
             _ => true,
         }
+    }
+}
+
+impl Display for Expr {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> Result<(), fmt::Error> {
+        write!(f, "{}", self.raw)
     }
 }
 
@@ -185,6 +192,16 @@ mod tests {
         fn apply_yes() {
             let parsed = Expr::parse("haskellPackages.ghcWithPackages (ps: [ ps.text ])").unwrap();
             assert!(parsed.needs_parens_in_list());
+        }
+    }
+
+    mod display {
+        use super::*;
+
+        #[test]
+        fn same_as_node() {
+            let parsed = Expr::parse("a b c").unwrap();
+            assert_eq!(parsed.to_string(), parsed.parsed.to_string());
         }
     }
 }

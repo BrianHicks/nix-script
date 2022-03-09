@@ -1,6 +1,7 @@
 mod input;
 mod inputs;
 
+use crate::expr::Expr;
 use anyhow::{Context, Result};
 use input::Input;
 use inputs::Inputs;
@@ -13,6 +14,8 @@ pub struct Derivation<'path> {
 
     name: &'path str,
     src: &'path Path,
+
+    build_inputs: Vec<Expr>,
 }
 
 impl<'path> Derivation<'path> {
@@ -27,7 +30,20 @@ impl<'path> Derivation<'path> {
                 .and_then(|name| name.to_str())
                 .context("could not determine derivation name from input path")?,
             src: src,
+            build_inputs: Vec::new(),
         })
+    }
+
+    pub fn add_build_inputs(&mut self, build_inputs: Vec<Expr>) {
+        for build_input in build_inputs {
+            if build_input.is_extractable() {
+                self.inputs.push(Input::new(
+                    build_input.to_string(),
+                    Some(format!("pkgs.{}", build_input)),
+                ));
+            }
+            self.build_inputs.push(build_input); // TODO: uniqueness check
+        }
     }
 }
 impl Display for Derivation<'_> {

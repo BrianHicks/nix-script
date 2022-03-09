@@ -6,9 +6,9 @@ use std::collections::HashMap;
 
 #[derive(Debug)]
 pub struct Directives<'src> {
-    build: Option<&'src str>,
-    build_inputs: Vec<Expr>,
-    runtime_inputs: Vec<Expr>,
+    pub build: Option<&'src str>,
+    pub build_inputs: Vec<Expr>,
+    pub runtime_inputs: Vec<Expr>,
 }
 
 impl<'src> Directives<'src> {
