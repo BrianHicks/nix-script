@@ -1,6 +1,7 @@
 use anyhow::{Context, Result};
 use rnix::types::{List, TypedNode, Wrapper};
 use rnix::{SyntaxKind, SyntaxNode};
+use std::cmp::Ordering;
 use std::fmt::{self, Display};
 
 #[derive(Debug, Eq, Hash)]
@@ -83,6 +84,18 @@ impl Display for Expr {
 impl PartialEq for Expr {
     fn eq(&self, other: &Self) -> bool {
         self.raw == other.raw
+    }
+}
+
+impl Ord for Expr {
+    fn cmp(&self, other: &Self) -> Ordering {
+        self.raw.cmp(&other.raw)
+    }
+}
+
+impl PartialOrd for Expr {
+    fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
+        self.raw.partial_cmp(&other.raw)
     }
 }
 
