@@ -1,24 +1,37 @@
-use rnix::types::Root;
+use anyhow::{Context, Result};
+use rnix::types::{List, TypedNode, Wrapper};
+use rnix::SyntaxNode;
 
 #[derive(Debug)]
 pub struct Expr {
     raw: String,
-    parsed: Root,
+    parsed: SyntaxNode,
 }
 
 impl Expr {
     pub fn parse(source: &str) -> Self {
         Self {
             raw: source.to_string(),
-            parsed: rnix::parse(source).root(),
+            parsed: rnix::parse(source).node(),
         }
     }
 
-    pub fn parse_as_list(source: &str) -> Vec<Self> {
-        let ast = rnix::parse(source);
-        println!("{:#?}", ast.root());
+    pub fn parse_as_list(source: &str) -> Result<Vec<Self>> {
+        let root = rnix::parse(&format!("[{}]", source))
+            .as_result()
+            .context("failed to parse the source when wrapping as a list")?
+            .root();
 
-        vec![]
+        Ok(
+            List::cast(root.inner().context("root did not have an inner node")?)
+                .context("could not parse this list as a list")?
+                .items()
+                .map(|node| Expr {
+                    raw: node.to_string(),
+                    parsed: node,
+                })
+                .collect(),
+        )
     }
 }
 
@@ -51,8 +64,19 @@ mod tests {
 
         #[test]
         fn single_item() {
-            let out: Vec<Expr> = Vec::new();
-            assert_eq!(out, Expr::parse_as_list("a"))
+            let parsed = Expr::parse_as_list("a").unwrap();
+
+            assert_eq!(1, parsed.len());
+            assert_eq!("a", parsed[0].raw);
+        }
+
+        #[test]
+        fn multiple_items() {
+            let parsed = Expr::parse_as_list("a b").unwrap();
+
+            assert_eq!(2, parsed.len());
+            assert_eq!("a", parsed[0].raw);
+            assert_eq!("b", parsed[1].raw);
         }
     }
 }
