@@ -1,13 +1,13 @@
-use std::collections::HashMap;
+use std::collections::BTreeMap;
 use std::convert::From;
 use std::fmt::{self, Display};
 
 #[derive(Debug)]
-pub struct Inputs(HashMap<String, Option<String>>);
+pub struct Inputs(BTreeMap<String, Option<String>>);
 
 impl Inputs {
     pub fn new() -> Self {
-        Inputs(HashMap::new())
+        Inputs(BTreeMap::new())
     }
 
     pub fn insert(&mut self, name: String, default: Option<String>) {
@@ -69,7 +69,7 @@ mod tests {
         #[test]
         fn with_many() {
             assert_eq!(
-                String::from("{ pkgs, jq ? pkgs.jq }"),
+                String::from("{ jq ? pkgs.jq, pkgs }"),
                 Inputs::from(vec![
                     ("pkgs".into(), None),
                     ("jq".into(), Some("pkgs.jq".into()))
