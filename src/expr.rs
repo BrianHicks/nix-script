@@ -10,15 +10,14 @@ pub struct Expr {
 
 impl Expr {
     pub fn parse(source: &str) -> Result<Self> {
-        Ok(Self {
-            raw: source.to_string(),
-            parsed: rnix::parse(source)
+        Ok(Self::from_node(
+            rnix::parse(source)
                 .as_result()
                 .context("failed to parse the source")?
                 .root()
                 .inner()
                 .context("root node did not have an inner node")?,
-        })
+        ))
     }
 
     pub fn parse_as_list(source: &str) -> Result<Vec<Self>> {
@@ -31,12 +30,29 @@ impl Expr {
             List::cast(root.inner().context("root did not have an inner node")?)
                 .context("could not parse this list as a list")?
                 .items()
-                .map(|node| Expr {
-                    raw: node.to_string(),
-                    parsed: node,
-                })
+                .map(|node| Self::from_node(node))
                 .collect(),
         )
+    }
+
+    fn from_node(node: SyntaxNode) -> Expr {
+        let mut out = node;
+
+        loop {
+            if out.kind() == SyntaxKind::NODE_PAREN {
+                if let Some(inner) = out.children().next() {
+                    out = inner;
+                    continue;
+                }
+            }
+
+            break;
+        }
+
+        Self {
+            raw: out.to_string(),
+            parsed: out,
+        }
     }
 
     pub fn is_extractable(&self) -> bool {
@@ -82,6 +98,30 @@ mod tests {
         #[test]
         fn rejects_invalid() {
             assert!(Expr::parse("[").is_err())
+        }
+
+        #[test]
+        fn unwraps_root() {
+            assert_eq!(
+                SyntaxKind::NODE_IDENT,
+                Expr::parse("a").unwrap().parsed.kind()
+            )
+        }
+
+        #[test]
+        fn unwraps_parens() {
+            assert_eq!(
+                SyntaxKind::NODE_IDENT,
+                Expr::parse("(a)").unwrap().parsed.kind()
+            )
+        }
+
+        #[test]
+        fn unwraps_all_parens() {
+            assert_eq!(
+                SyntaxKind::NODE_IDENT,
+                Expr::parse("((a))").unwrap().parsed.kind()
+            )
         }
     }
 
