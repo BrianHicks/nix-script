@@ -1,5 +1,6 @@
 mod derivation;
 mod directives;
+mod expr;
 
 use crate::derivation::Derivation;
 use crate::directives::Directives;
