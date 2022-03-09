@@ -7,8 +7,8 @@ use std::collections::{HashMap, HashSet};
 #[derive(Debug)]
 pub struct Directives<'src> {
     build: Option<&'src str>,
-    buildInputs: Option<NixExpr>,
-    runtimeInputs: Option<NixExpr>,
+    build_inputs: Option<NixExpr>,
+    runtime_inputs: Option<NixExpr>,
 }
 
 impl<'src> Directives<'src> {
@@ -33,19 +33,19 @@ impl<'src> Directives<'src> {
         };
 
         // buildInputs (many)
-        let buildInputs = fields
+        let build_inputs = fields
             .get("buildInputs")
             .map(|lines| NixExpr::as_list_from_lines(lines));
 
         // runtimeInputs (many)
-        let runtimeInputs = fields
+        let runtime_inputs = fields
             .get("runtimeInputs")
             .map(|lines| NixExpr::as_list_from_lines(lines));
 
         Ok(Directives {
             build,
-            buildInputs,
-            runtimeInputs,
+            build_inputs,
+            runtime_inputs,
         })
     }
 }
