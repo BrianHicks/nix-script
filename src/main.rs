@@ -32,13 +32,13 @@ impl Opts {
 
         let source = fs::read_to_string(&script).context("could not read script")?;
 
-        println!(
-            "{:#?}",
-            Directives::parse(&self.indicator, &source)
-                .context("could not construct a directive parser")?
-        );
+        let directives = Directives::parse(&self.indicator, &source)
+            .context("could not construct a directive parser")?;
 
-        let derivation = Derivation::new(&script).context("could not create a Nix derivation")?;
+        let mut derivation =
+            Derivation::new(&script).context("could not create a Nix derivation")?;
+        derivation.add_build_inputs(directives.build_inputs);
+
         println!("{:#?}", derivation);
         println!("{}", derivation);
 

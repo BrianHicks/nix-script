@@ -5,6 +5,12 @@ use std::fmt::{self, Display};
 #[derive(Debug)]
 pub struct Inputs(Vec<Input>);
 
+impl Inputs {
+    pub fn push(&mut self, input: Input) {
+        self.0.push(input)
+    }
+}
+
 impl From<Vec<Input>> for Inputs {
     fn from(inputs: Vec<Input>) -> Self {
         Inputs(inputs)
