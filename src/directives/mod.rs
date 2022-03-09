@@ -7,12 +7,7 @@ use std::collections::HashMap;
 #[derive(Debug)]
 pub struct Directives<'src> {
     build: Option<&'src str>,
-}
-
-#[derive(Debug)]
-pub struct NixExpr<'src> {
-    raw: &'src str,
-    parsed: Root,
+    buildInputs: Vec<NixExpr<'src>>,
 }
 
 impl<'src> Directives<'src> {
@@ -36,6 +31,27 @@ impl<'src> Directives<'src> {
             None => None,
         };
 
-        Ok(Directives { build })
+        // buildInputs (many)
+        let buildInputs = fields
+            .get("buildInputs")
+            .map(|arr| arr.iter().map(|line| NixExpr::parse(line)).collect())
+            .unwrap_or_else(|| Vec::new());
+
+        Ok(Directives { build, buildInputs })
+    }
+}
+
+#[derive(Debug)]
+pub struct NixExpr<'src> {
+    raw: &'src str,
+    parsed: Root,
+}
+
+impl<'src> NixExpr<'src> {
+    pub fn parse(source: &'src str) -> Self {
+        NixExpr {
+            raw: source,
+            parsed: rnix::parse(source).root(),
+        }
     }
 }
