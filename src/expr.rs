@@ -61,6 +61,16 @@ impl Expr {
             _ => false,
         }
     }
+
+    pub fn needs_parens_in_list(&self) -> bool {
+        // We're explicit that we don't need tokens most of the time (instead
+        // of being explicit when we *do* need them) since it's always safe to
+        // add more parentheses but not always safe to leave them off.
+        match self.parsed.kind() {
+            SyntaxKind::NODE_IDENT => false,
+            _ => true,
+        }
+    }
 }
 
 impl PartialEq for Expr {
@@ -156,9 +166,25 @@ mod tests {
         }
 
         #[test]
-        fn call_no() {
+        fn apply_no() {
             let parsed = Expr::parse("haskellPackages.ghcWithPackages (ps: [ ps.text ])").unwrap();
             assert!(!parsed.is_extractable());
+        }
+    }
+
+    mod needs_parens_in_list {
+        use super::*;
+
+        #[test]
+        fn ident_no() {
+            let parsed = Expr::parse("a").unwrap();
+            assert!(!parsed.needs_parens_in_list());
+        }
+
+        #[test]
+        fn apply_yes() {
+            let parsed = Expr::parse("haskellPackages.ghcWithPackages (ps: [ ps.text ])").unwrap();
+            assert!(parsed.needs_parens_in_list());
         }
     }
 }
