@@ -38,6 +38,7 @@ impl Opts {
         let mut derivation =
             Derivation::new(&script).context("could not create a Nix derivation")?;
         derivation.add_build_inputs(directives.build_inputs);
+        derivation.add_runtime_inputs(directives.runtime_inputs);
 
         println!("{:#?}", derivation);
         println!("{}", derivation);

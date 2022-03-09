@@ -15,6 +15,7 @@ pub struct Derivation<'path> {
     src: &'path Path,
 
     build_inputs: HashSet<Expr>,
+    runtime_inputs: HashSet<Expr>,
 }
 
 impl<'path> Derivation<'path> {
@@ -27,6 +28,7 @@ impl<'path> Derivation<'path> {
                 .context("could not determine derivation name from input path")?,
             src: src,
             build_inputs: HashSet::new(),
+            runtime_inputs: HashSet::new(),
         })
     }
 
@@ -39,6 +41,18 @@ impl<'path> Derivation<'path> {
                 );
             }
             self.build_inputs.insert(build_input);
+        }
+    }
+
+    pub fn add_runtime_inputs(&mut self, runtime_inputs: Vec<Expr>) {
+        for runtime_input in runtime_inputs {
+            if runtime_input.is_extractable() {
+                self.inputs.insert(
+                    runtime_input.to_string(),
+                    Some(format!("pkgs.{}", runtime_input)),
+                );
+            }
+            self.runtime_inputs.insert(runtime_input);
         }
     }
 }
