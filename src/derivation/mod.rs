@@ -1,9 +1,7 @@
-mod input;
 mod inputs;
 
 use crate::expr::Expr;
 use anyhow::{Context, Result};
-use input::Input;
 use inputs::Inputs;
 use std::fmt::{self, Display};
 use std::path::Path;
@@ -21,10 +19,7 @@ pub struct Derivation<'path> {
 impl<'path> Derivation<'path> {
     pub fn new(src: &'path Path) -> Result<Self> {
         Ok(Self {
-            inputs: Inputs::from(vec![Input::new(
-                "pkgs".into(),
-                Some("import <nixpkgs> { }".into()),
-            )]),
+            inputs: Inputs::from(vec![("pkgs".into(), Some("import <nixpkgs> { }".into()))]),
             name: src
                 .file_name()
                 .and_then(|name| name.to_str())
@@ -37,10 +32,10 @@ impl<'path> Derivation<'path> {
     pub fn add_build_inputs(&mut self, build_inputs: Vec<Expr>) {
         for build_input in build_inputs {
             if build_input.is_extractable() {
-                self.inputs.push(Input::new(
+                self.inputs.insert(
                     build_input.to_string(),
                     Some(format!("pkgs.{}", build_input)),
-                ));
+                );
             }
             self.build_inputs.push(build_input); // TODO: uniqueness check
         }
