@@ -51,7 +51,7 @@ impl<'src> Directives<'src> {
         Ok(Directives {
             build,
             build_inputs,
-            runtime_inputs: vec![],
+            runtime_inputs,
         })
     }
 }
