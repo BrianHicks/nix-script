@@ -101,12 +101,15 @@ mod tests {
         #[test]
         fn empty() {
             let path: PathBuf = [".", "path", "to", "my", "cool-script"].iter().collect();
+            let derivation = Derivation::new(&path).unwrap();
+
+            assert_no_errors(&derivation.to_string());
 
             assert_eq!(
                 String::from(
-                    "{ pkgs ? import <nixpkgs> { } }:\n{\n  name = \"cool-script\";\n  src = ./path/to/my/cool-script;\n}"
+                    "{ pkgs ? import <nixpkgs> { } }:\n{\n  name = \"cool-script\";\n  src = ./path/to/my/cool-script;\n}" 
                 ),
-                Derivation::new(&path).unwrap().to_string(),
+                derivation.to_string()
             )
         }
 
@@ -118,6 +121,8 @@ mod tests {
                 Expr::parse("jq").unwrap(),
                 Expr::parse("bash").unwrap(),
             ]);
+
+            assert_no_errors(&derivation.to_string());
 
             assert_eq!(
                 String::from(
