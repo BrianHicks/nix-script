@@ -6,7 +6,7 @@ use std::collections::HashMap;
 
 #[derive(Debug)]
 pub struct Directives<'src> {
-    pub build: Option<&'src str>,
+    pub build_command: Option<&'src str>,
     pub build_inputs: Vec<Expr>,
     pub runtime_inputs: Vec<Expr>,
 }
@@ -21,7 +21,7 @@ impl<'src> Directives<'src> {
 
     fn from_directives(fields: HashMap<&'src str, Vec<&'src str>>) -> Result<Self> {
         // Build (once)
-        let build = match fields.get("build") {
+        let build_command = match fields.get("build") {
             Some(value) => {
                 if value.len() != 1 {
                     anyhow::bail!("I got multiple build directives, and I don't know which to use. Remove all but one and try again!");
@@ -49,7 +49,7 @@ impl<'src> Directives<'src> {
         };
 
         Ok(Directives {
-            build,
+            build_command,
             build_inputs,
             runtime_inputs,
         })
