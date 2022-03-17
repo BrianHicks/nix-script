@@ -92,7 +92,7 @@ impl Display for Derivation<'_, '_> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> Result<(), fmt::Error> {
         write!(
             f,
-            "{}:\n{{\n  name = \"{}\";\n  src = {};\n",
+            "{}: {{\n  name = \"{}\";\n  src = {};\n",
             self.inputs,
             self.name,
             self.src.display(),
