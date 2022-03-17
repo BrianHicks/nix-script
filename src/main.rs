@@ -54,7 +54,6 @@ impl Opts {
         derivation.add_build_inputs(directives.build_inputs);
         derivation.add_runtime_inputs(directives.runtime_inputs);
 
-        println!("{:#?}", derivation);
         println!("{}", derivation);
 
         Ok(())
