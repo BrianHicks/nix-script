@@ -36,7 +36,12 @@ struct Opts {
 
 impl Opts {
     fn run(&self) -> Result<()> {
-        let script = PathBuf::from(self.script_and_args.get(0).context("we already validated that we had at least the script in script_and_args, but couldn't read it. Please file a bug!")?);
+        let mut script = PathBuf::from(self.script_and_args.get(0).context("we already validated that we had at least the script in script_and_args, but couldn't read it. Please file a bug!")?);
+        if script.is_relative() {
+            script = std::env::current_dir()
+                .context("could not get current working directory")?
+                .join(script)
+        }
 
         let source = fs::read_to_string(&script).context("could not read script")?;
 

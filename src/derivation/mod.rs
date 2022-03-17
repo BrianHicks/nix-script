@@ -33,12 +33,14 @@ impl<'path, 'src> Derivation<'path, 'src> {
             src: match src.parent() {
                 Some(path) => {
                     if path.is_relative() {
-                        Path::new(".").join(path).to_path_buf()
-                    } else {
-                        path.to_path_buf()
+                        anyhow::bail!("I need an absolute path as source")
                     }
+
+                    path.to_path_buf()
                 }
-                None => PathBuf::from("./."),
+                None => anyhow::bail!(
+                    "could not determine an absolute path from the given source directory"
+                ),
             },
             build_command,
             build_inputs: BTreeSet::new(),
