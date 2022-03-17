@@ -102,6 +102,7 @@ impl<'path, 'src> Derivation<'path, 'src> {
         );
     }
 }
+
 impl Display for Derivation<'_, '_> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> Result<(), fmt::Error> {
         write!(
