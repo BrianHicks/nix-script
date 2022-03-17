@@ -116,8 +116,7 @@ impl Display for Derivation<'_, '_> {
         write!(
             f,
             "  buildPhase = ''\n    SRC={}\n\n    mkdir bin\n    OUT=bin/{}\n\n",
-            self.src.display(),
-            self.name,
+            self.name, self.name,
         )?;
         if self.build_command.is_empty() {
             write!(f, "    echo build command is not set\n    exit 1\n")?;
