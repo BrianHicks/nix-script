@@ -1,5 +1,5 @@
 #!/usr/bin/env nix-script
-#!build cp $SRC $OUT; chmod +x $OUT
+#!build cp $SRC $OUT
 #!interpreter bash
 #!runtimeInputs bash jq
 # shellcheck shell=bash
