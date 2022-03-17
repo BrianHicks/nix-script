@@ -8,27 +8,28 @@ use std::fmt::{self, Display};
 use std::path::{Path, PathBuf};
 
 #[derive(Debug)]
-pub struct Derivation<'path, 'src> {
+pub struct Derivation {
     inputs: Inputs,
 
-    name: &'path str,
+    name: String,
     src: PathBuf,
 
-    build_command: &'src str,
+    build_command: String,
 
     build_inputs: BTreeSet<Expr>,
 
-    interpreter: Option<(&'src str, Option<&'src str>)>,
+    interpreter: Option<(String, Option<String>)>,
     runtime_inputs: BTreeSet<Expr>,
 }
 
-impl<'path, 'src> Derivation<'path, 'src> {
-    pub fn new(src: &'path Path, build_command: &'src str) -> Result<Self> {
+impl Derivation {
+    pub fn new(src: &Path, build_command: &str) -> Result<Self> {
         Ok(Self {
             inputs: Inputs::from(vec![("pkgs".into(), Some("import <nixpkgs> { }".into()))]),
             name: src
                 .file_name()
                 .and_then(|name| name.to_str())
+                .map(|name| name.to_owned())
                 .context("could not determine derivation name from input path")?,
             src: match src.parent() {
                 Some(path) => {
@@ -47,7 +48,7 @@ impl<'path, 'src> Derivation<'path, 'src> {
                     "could not determine an absolute path from the given source directory"
                 ),
             },
-            build_command,
+            build_command: build_command.to_owned(),
             build_inputs: BTreeSet::new(),
             interpreter: None,
             runtime_inputs: BTreeSet::new(),
@@ -66,7 +67,7 @@ impl<'path, 'src> Derivation<'path, 'src> {
         }
     }
 
-    pub fn set_interpreter(&mut self, interpreter: &'src str) -> Result<()> {
+    pub fn set_interpreter(&mut self, interpreter: &str) -> Result<()> {
         let trimmed = interpreter.trim();
         let mut words = trimmed.split(" ");
 
@@ -76,7 +77,14 @@ impl<'path, 'src> Derivation<'path, 'src> {
 
         let args = trimmed[command.len()..].trim();
 
-        self.interpreter = Some((command, if args.is_empty() { None } else { Some(args) }));
+        self.interpreter = Some((
+            command.to_owned(),
+            if args.is_empty() {
+                None
+            } else {
+                Some(args.to_owned())
+            },
+        ));
         self.depend_on_make_wrapper();
 
         Ok(())
@@ -103,7 +111,7 @@ impl<'path, 'src> Derivation<'path, 'src> {
     }
 }
 
-impl Display for Derivation<'_, '_> {
+impl Display for Derivation {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> Result<(), fmt::Error> {
         write!(
             f,
