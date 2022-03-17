@@ -160,7 +160,7 @@ impl Display for Derivation<'_, '_> {
                         args, self.name
                     )?
                 } else {
-                    write!(f, "        --add-flags \"$out/bin/{}\"", self.name)?;
+                    write!(f, "        --add-flags \"$out/bin/.{}\"", self.name)?;
                 }
             } else {
                 write!(
