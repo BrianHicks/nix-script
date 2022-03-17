@@ -1,5 +1,5 @@
 #!/usr/bin/env nix-script
-#!build $SRC $SRC.hs; ghc -o $OUT $SRC.hs
+#!build mv $SRC $SRC.hs; ghc -o $OUT $SRC.hs
 #!buildInputs (haskellPackages.ghcWithPackages (ps: [ ps.text ]))
 
 {-# LANGUAGE OverloadedStrings #-}
