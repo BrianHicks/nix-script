@@ -8,6 +8,7 @@ use std::collections::HashMap;
 pub struct Directives<'src> {
     pub build_command: Option<&'src str>,
     pub build_inputs: Vec<Expr>,
+    pub interpreter: Option<&'src str>,
     pub runtime_inputs: Vec<Expr>,
 }
 
@@ -40,6 +41,18 @@ impl<'src> Directives<'src> {
             }
         };
 
+        // interpreter (once)
+        let interpreter = match fields.get("interpreter") {
+            Some(value) => {
+                if value.len() != 1 {
+                    anyhow::bail!("I got multiple interpreter directives, and I don't known which to use. Remove all but one and try agagin!");
+                }
+
+                Some(value[0])
+            }
+            None => None,
+        };
+
         // runtimeInputs (many)
         let runtime_inputs = match fields.get("runtimeInputs") {
             None => Vec::new(),
@@ -51,6 +64,7 @@ impl<'src> Directives<'src> {
         Ok(Directives {
             build_command,
             build_inputs,
+            interpreter,
             runtime_inputs,
         })
     }

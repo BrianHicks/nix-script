@@ -17,6 +17,8 @@ pub struct Derivation<'path, 'src> {
     build_command: &'src str,
 
     build_inputs: BTreeSet<Expr>,
+
+    interpreter: Option<(&'src str, Option<&'src str>)>,
     runtime_inputs: BTreeSet<Expr>,
 }
 
@@ -31,6 +33,7 @@ impl<'path, 'src> Derivation<'path, 'src> {
             src,
             build_command,
             build_inputs: BTreeSet::new(),
+            interpreter: None,
             runtime_inputs: BTreeSet::new(),
         })
     }
@@ -45,6 +48,21 @@ impl<'path, 'src> Derivation<'path, 'src> {
             }
             self.build_inputs.insert(build_input);
         }
+    }
+
+    pub fn set_interpreter(&mut self, interpreter: &'src str) -> Result<()> {
+        let trimmed = interpreter.trim();
+        let mut words = trimmed.split(" ");
+
+        let command = words
+            .next()
+            .context("need at least a command in the interpreter, but got a blank string")?;
+
+        let args = trimmed[command.len()..].trim();
+
+        self.interpreter = Some((command, if args.is_empty() { None } else { Some(args) }));
+
+        Ok(())
     }
 
     pub fn add_runtime_inputs(&mut self, runtime_inputs: Vec<Expr>) {
@@ -100,28 +118,47 @@ impl Display for Derivation<'_, '_> {
         // install phase
         write!(
             f,
-            "  installPhase = ''\n    mkdir -p $out\n    mv bin $out/bin\n"
+            "  installPhase = ''\n    mkdir -p $out\n    mv bin $out/bin"
         )?;
-        if !self.runtime_inputs.is_empty() {
-            write!(
-                f,
-                "\n    makeWrapper {} $out/bin/{} \\\n        --argv0 {} \\\n        --prefix PATH : ${{pkgs.lib.makeBinPath [ ",
-                    self.name,
-                    self.name,
-                    self.name,
-            )?;
 
-            for input in &self.runtime_inputs {
-                if input.needs_parens_in_list() {
-                    write!(f, "({}) ", input)?;
+        if self.interpreter.is_some() || !self.runtime_inputs.is_empty() {
+            write!(f, "\n\n    ")?;
+
+            if let Some((command, maybe_args)) = &self.interpreter {
+                write!(
+                    f,
+                    "mv $out/bin/{} $out/bin/.{}\n    makeWrapper $(command -v {}) $out/{} \\\n",
+                    self.name, self.name, command, self.name
+                )?;
+
+                if let Some(args) = maybe_args {
+                    write!(f, "        --add-flags \"{} $out/.{}\" ", args, self.name)?
                 } else {
-                    write!(f, "{} ", input)?;
+                    write!(f, "        --add-flags \"$out/{}\"", self.name)?;
                 }
+            } else {
+                write!(
+                    f,
+                    "makeWrapper $out/bin/{} --argv0 {}",
+                    self.name, self.name
+                )?
             }
 
-            write!(f, "]}}\n")?;
+            if !self.runtime_inputs.is_empty() {
+                write!(f, " \\\n        --prefix PATH : ${{pkgs.lib.makeBinPath [ ")?;
+
+                for input in &self.runtime_inputs {
+                    if input.needs_parens_in_list() {
+                        write!(f, "({}) ", input)?;
+                    } else {
+                        write!(f, "{} ", input)?;
+                    }
+                }
+
+                write!(f, "]}}")?;
+            }
         }
-        write!(f, "  '';\n")?;
+        write!(f, "\n  '';\n")?;
 
         write!(f, "}}")
     }
