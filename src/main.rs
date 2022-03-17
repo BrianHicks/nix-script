@@ -1,7 +1,9 @@
 mod derivation;
-mod directive;
+mod directives;
+mod expr;
 
 use crate::derivation::Derivation;
+use crate::directives::Directives;
 use anyhow::{Context, Result};
 use clap::Parser;
 use std::fs;
@@ -14,26 +16,61 @@ struct Opts {
     #[clap(long, default_value = "#!")]
     indicator: String,
 
-    /// The script to run
-    script: PathBuf,
+    /// How should we build this script? (Will override any `#!build` line
+    /// present in the script.)
+    #[clap(long("build"))]
+    build_command: Option<String>,
 
-    /// Any positional arguments after the script name will be passed on to
-    /// the script.
-    script_args: Vec<String>,
+    #[clap(long("interpreter"))]
+    interpreter: Option<String>,
+
+    /// The script to run, plus any arguments. Any positional arguments after
+    /// the script name will be passed on to the script.
+    // Note: it'd be better to have a "script" and "args" field separately,
+    // but there's a parsing issue in Clap (not a bug, but maybe a bug?) that
+    // prevents passing args starting in -- after the script if we do that. See
+    // https://github.com/clap-rs/clap/issues/1538
+    #[clap(min_values = 1)]
+    script_and_args: Vec<String>,
 }
 
 impl Opts {
     fn run(&self) -> Result<()> {
-        let directive_parser = directive::Parser::new(&self.indicator)
+        let mut script = PathBuf::from(self.script_and_args.get(0).context("we already validated that we had at least the script in script_and_args, but couldn't read it. Please file a bug!")?);
+        if script.is_relative() {
+            script = std::env::current_dir()
+                .context("could not get current working directory")?
+                .join(script)
+        }
+
+        let source = fs::read_to_string(&script).context("could not read script")?;
+
+        let directives = Directives::parse(&self.indicator, &source)
             .context("could not construct a directive parser")?;
 
-        let source = fs::read_to_string(&self.script).context("could not read script")?;
+        let build_command = if let Some(from_opts) = &self.build_command {
+            from_opts
+        } else if let Some(from_directives) = directives.build_command {
+            from_directives
+        } else {
+            anyhow::bail!("Need a build command, either by specifying a `build` directive or passing the `--build` option.")
+        };
 
-        println!("{:#?}", directive_parser.parse(&source));
+        let mut derivation =
+            Derivation::new(&script, build_command).context("could not create a Nix derivation")?;
+        derivation.add_build_inputs(directives.build_inputs);
+        derivation.add_runtime_inputs(directives.runtime_inputs);
 
-        let derivation =
-            Derivation::new(&self.script).context("could not create a Nix derivation")?;
-        println!("{:#?}", derivation);
+        if let Some(from_opts) = &self.interpreter {
+            derivation
+                .set_interpreter(from_opts)
+                .context("could not set interpreter from command-line flags")?
+        } else if let Some(from_directives) = directives.interpreter {
+            derivation
+                .set_interpreter(from_directives)
+                .context("could not set interpreter from file directives")?
+        };
+
         println!("{}", derivation);
 
         Ok(())
