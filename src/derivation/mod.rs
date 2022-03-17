@@ -229,5 +229,23 @@ mod tests {
 
             assert_no_errors(&derivation.to_string());
         }
+
+        #[test]
+        fn with_runtime_inputs() {
+            let path = PathBuf::from("/X");
+            let mut derivation = Derivation::new(&path, "mv $SRC $DEST".into()).unwrap();
+            derivation.add_runtime_inputs(vec![Expr::parse("jq").unwrap()]);
+
+            assert_no_errors(&derivation.to_string());
+        }
+
+        #[test]
+        fn with_interpreter() {
+            let path = PathBuf::from("/X");
+            let mut derivation = Derivation::new(&path, "mv $SRC $DEST".into()).unwrap();
+            derivation.set_interpreter("bash").unwrap();
+
+            assert_no_errors(&derivation.to_string());
+        }
     }
 }
