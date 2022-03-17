@@ -5,14 +5,14 @@ use anyhow::{Context, Result};
 use inputs::Inputs;
 use std::collections::BTreeSet;
 use std::fmt::{self, Display};
-use std::path::Path;
+use std::path::{Path, PathBuf};
 
 #[derive(Debug)]
 pub struct Derivation<'path, 'src> {
     inputs: Inputs,
 
     name: &'path str,
-    src: &'path Path,
+    src: PathBuf,
 
     build_command: &'src str,
 
@@ -30,7 +30,16 @@ impl<'path, 'src> Derivation<'path, 'src> {
                 .file_name()
                 .and_then(|name| name.to_str())
                 .context("could not determine derivation name from input path")?,
-            src,
+            src: match src.parent() {
+                Some(path) => {
+                    if path.is_relative() {
+                        Path::new(".").join(path).to_path_buf()
+                    } else {
+                        path.to_path_buf()
+                    }
+                }
+                None => PathBuf::from("./."),
+            },
             build_command,
             build_inputs: BTreeSet::new(),
             interpreter: None,
