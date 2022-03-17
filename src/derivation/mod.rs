@@ -114,7 +114,7 @@ impl Display for Derivation<'_, '_> {
         )?;
 
         if self.build_inputs.len() > 0 {
-            write!(f, "\n  buildInputs = with pkgs; [")?;
+            write!(f, "  buildInputs = with pkgs; [")?;
 
             for input in &self.build_inputs {
                 if input.needs_parens_in_list() {
