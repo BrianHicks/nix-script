@@ -7,7 +7,7 @@ use crate::directives::Directives;
 use anyhow::{Context, Result};
 use clap::Parser;
 use std::fs;
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 
 #[derive(Debug, Parser)]
 #[clap(version, trailing_var_arg = true)]
@@ -45,28 +45,9 @@ impl Opts {
         let directives = Directives::parse(&self.indicator, &source)
             .context("could not construct a directive parser")?;
 
-        let build_command = if let Some(from_opts) = &self.build_command {
-            from_opts
-        } else if let Some(from_directives) = directives.build_command {
-            from_directives
-        } else {
-            anyhow::bail!("Need a build command, either by specifying a `build` directive or passing the `--build` option.")
-        };
-
-        let mut derivation =
-            Derivation::new(&script, build_command).context("could not create a Nix derivation")?;
-        derivation.add_build_inputs(directives.build_inputs);
-        derivation.add_runtime_inputs(directives.runtime_inputs);
-
-        if let Some(from_opts) = &self.interpreter {
-            derivation
-                .set_interpreter(from_opts)
-                .context("could not set interpreter from command-line flags")?
-        } else if let Some(from_directives) = directives.interpreter {
-            derivation
-                .set_interpreter(from_directives)
-                .context("could not set interpreter from file directives")?
-        };
+        let derivation = self
+            .derivation(&script, directives)
+            .context("could not generate derivation")?;
 
         println!("{}", derivation);
 
@@ -84,6 +65,33 @@ impl Opts {
         }
 
         Ok((script, self.script_and_args[1..].to_vec()))
+    }
+
+    fn derivation(&self, script: &Path, directives: Directives) -> Result<Derivation> {
+        let build_command = if let Some(from_opts) = &self.build_command {
+            from_opts
+        } else if let Some(from_directives) = directives.build_command {
+            from_directives
+        } else {
+            anyhow::bail!("Need a build command, either by specifying a `build` directive or passing the `--build` option.")
+        };
+
+        let mut derivation =
+            Derivation::new(script, build_command).context("could not create a Nix derivation")?;
+        derivation.add_build_inputs(directives.build_inputs);
+        derivation.add_runtime_inputs(directives.runtime_inputs);
+
+        if let Some(from_opts) = &self.interpreter {
+            derivation
+                .set_interpreter(from_opts)
+                .context("could not set interpreter from command-line flags")?
+        } else if let Some(from_directives) = directives.interpreter {
+            derivation
+                .set_interpreter(from_directives)
+                .context("could not set interpreter from file directives")?
+        };
+
+        Ok(derivation)
     }
 }
 
