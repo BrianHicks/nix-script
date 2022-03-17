@@ -72,11 +72,13 @@ impl<'path, 'src> Derivation<'path, 'src> {
         let args = trimmed[command.len()..].trim();
 
         self.interpreter = Some((command, if args.is_empty() { None } else { Some(args) }));
+        self.depend_on_make_wrapper();
 
         Ok(())
     }
 
     pub fn add_runtime_inputs(&mut self, runtime_inputs: Vec<Expr>) {
+        self.depend_on_make_wrapper();
         for runtime_input in runtime_inputs {
             if runtime_input.is_extractable() {
                 self.inputs.insert(
@@ -86,6 +88,13 @@ impl<'path, 'src> Derivation<'path, 'src> {
             }
             self.runtime_inputs.insert(runtime_input);
         }
+    }
+
+    fn depend_on_make_wrapper(&mut self) {
+        self.inputs.insert(
+            "makeWrapper".to_string(),
+            Some("pkgs.makeWrapper".to_string()),
+        );
     }
 }
 impl Display for Derivation<'_, '_> {
@@ -132,7 +141,10 @@ impl Display for Derivation<'_, '_> {
         )?;
 
         if self.interpreter.is_some() || !self.runtime_inputs.is_empty() {
-            write!(f, "\n\n    ")?;
+            write!(
+                f,
+                "\n\n    source ${{makeWrapper}}/nix-support/setup-hook\n    "
+            )?;
 
             if let Some((command, maybe_args)) = &self.interpreter {
                 write!(
