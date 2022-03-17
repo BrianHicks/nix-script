@@ -36,12 +36,9 @@ struct Opts {
 
 impl Opts {
     fn run(&self) -> Result<()> {
-        let mut script = PathBuf::from(self.script_and_args.get(0).context("we already validated that we had at least the script in script_and_args, but couldn't read it. Please file a bug!")?);
-        if script.is_relative() {
-            script = std::env::current_dir()
-                .context("could not get current working directory")?
-                .join(script)
-        }
+        let (script, _args) = self
+            .parse_script_and_args()
+            .context("could not parse script and args")?;
 
         let source = fs::read_to_string(&script).context("could not read script")?;
 
@@ -74,6 +71,19 @@ impl Opts {
         println!("{}", derivation);
 
         Ok(())
+    }
+
+    fn parse_script_and_args(&self) -> Result<(PathBuf, Vec<String>)> {
+        let mut script_and_args = self.script_and_args.iter();
+
+        let mut script = PathBuf::from(script_and_args.next().context("we already validated that we had at least the script in script_and_args, but couldn't read it. Please file a bug!")?);
+        if script.is_relative() {
+            script = std::env::current_dir()
+                .context("could not get current working directory")?
+                .join(script)
+        }
+
+        Ok((script, self.script_and_args[1..].to_vec()))
     }
 }
 
