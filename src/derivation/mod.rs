@@ -83,6 +83,7 @@ impl Display for Derivation<'_, '_> {
             write!(f, " ];\n")?;
         }
 
+        // build phase
         write!(
             f,
             "  buildPhase = ''\n    SRC={}\n\n    mkdir bin\n    OUT=bin/{}\n\n",
@@ -93,6 +94,32 @@ impl Display for Derivation<'_, '_> {
             write!(f, "    echo build command is not set\n    exit 1\n")?;
         } else {
             write!(f, "    {}\n", self.build_command)?;
+        }
+        write!(f, "  '';\n\n")?;
+
+        // install phase
+        write!(
+            f,
+            "  installPhase = ''\n    mkdir -p $out\n    mv bin $out/bin\n"
+        )?;
+        if !self.runtime_inputs.is_empty() {
+            write!(
+                f,
+                "\n    makeWrapper {} $out/bin/{} \\\n        --argv0 {} \\\n        --prefix PATH : ${{pkgs.lib.makeBinPath [ ",
+                    self.name,
+                    self.name,
+                    self.name,
+            )?;
+
+            for input in &self.runtime_inputs {
+                if input.needs_parens_in_list() {
+                    write!(f, "({}) ", input)?;
+                } else {
+                    write!(f, "{} ", input)?;
+                }
+            }
+
+            write!(f, "]}}\n")?;
         }
         write!(f, "  '';\n")?;
 
