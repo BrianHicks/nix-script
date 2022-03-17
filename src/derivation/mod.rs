@@ -196,6 +196,7 @@ mod tests {
 
     pub fn assert_no_errors(src: &str) {
         let empty: Vec<rnix::parser::ParseError> = Vec::new();
+        println!("{}", src);
         assert_eq!(empty, rnix::parse(src).errors())
     }
 
