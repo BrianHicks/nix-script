@@ -11,6 +11,9 @@ pub struct Expr {
 }
 
 impl Expr {
+    #[cfg(test)]
+    // This is *extremely* useful for tests, but we don't end up using it anywhere
+    // else. If we do some day, it's fine to pop off the test-only flag here!
     pub fn parse(source: &str) -> Result<Self> {
         Ok(Self::from_node(
             rnix::parse(source)
