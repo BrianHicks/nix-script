@@ -21,6 +21,9 @@ struct Opts {
     #[clap(long("build"))]
     build_command: Option<String>,
 
+    #[clap(long("interpreter"))]
+    interpreter: Option<String>,
+
     /// The script to run, plus any arguments. Any positional arguments after
     /// the script name will be passed on to the script.
     // Note: it'd be better to have a "script" and "args" field separately,
@@ -40,7 +43,6 @@ impl Opts {
         let directives = Directives::parse(&self.indicator, &source)
             .context("could not construct a directive parser")?;
 
-        // let build_command = match self.build_command.as_ref().or_else(|| directives.build_command.map(|s| s.to_string())) {
         let build_command = if let Some(from_opts) = &self.build_command {
             from_opts
         } else if let Some(from_directives) = directives.build_command {
@@ -53,6 +55,16 @@ impl Opts {
             Derivation::new(&script, build_command).context("could not create a Nix derivation")?;
         derivation.add_build_inputs(directives.build_inputs);
         derivation.add_runtime_inputs(directives.runtime_inputs);
+
+        if let Some(from_opts) = &self.interpreter {
+            derivation
+                .set_interpreter(from_opts)
+                .context("could not set interpreter from command-line flags")?
+        } else if let Some(from_directives) = directives.interpreter {
+            derivation
+                .set_interpreter(from_directives)
+                .context("could not set interpreter from file directives")?
+        };
 
         println!("{}", derivation);
 
