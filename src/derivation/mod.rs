@@ -149,14 +149,18 @@ impl Display for Derivation<'_, '_> {
             if let Some((command, maybe_args)) = &self.interpreter {
                 write!(
                     f,
-                    "mv $out/bin/{} $out/bin/.{}\n    makeWrapper $(command -v {}) $out/{} \\\n",
+                    "mv $out/bin/{} $out/bin/.{}\n    makeWrapper $(command -v {}) $out/bin/{} \\\n",
                     self.name, self.name, command, self.name
                 )?;
 
                 if let Some(args) = maybe_args {
-                    write!(f, "        --add-flags \"{} $out/.{}\" ", args, self.name)?
+                    write!(
+                        f,
+                        "        --add-flags \"{} $out/bin/.{}\" ",
+                        args, self.name
+                    )?
                 } else {
-                    write!(f, "        --add-flags \"$out/{}\"", self.name)?;
+                    write!(f, "        --add-flags \"$out/bin/{}\"", self.name)?;
                 }
             } else {
                 write!(
