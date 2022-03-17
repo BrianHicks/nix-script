@@ -34,9 +34,14 @@ impl<'path, 'src> Derivation<'path, 'src> {
                 Some(path) => {
                     if path.is_relative() {
                         anyhow::bail!("I need an absolute path as source")
+                    } else if path.parent() == None {
+                        // no parent means we're at the root and we need to
+                        // format the path just a little differently so Nix
+                        // will be fine with it.
+                        PathBuf::from("/.")
+                    } else {
+                        path.to_path_buf()
                     }
-
-                    path.to_path_buf()
                 }
                 None => anyhow::bail!(
                     "could not determine an absolute path from the given source directory"
@@ -207,7 +212,7 @@ mod tests {
 
         #[test]
         fn empty() {
-            let path: PathBuf = [".", "path", "to", "my", "cool-script"].iter().collect();
+            let path: PathBuf = ["/", "path", "to", "my", "cool-script"].iter().collect();
             let derivation = Derivation::new(&path, "mv $SRC $DEST".into()).unwrap();
 
             assert_no_errors(&derivation.to_string());
@@ -215,7 +220,7 @@ mod tests {
 
         #[test]
         fn with_build_inputs() {
-            let path = PathBuf::from("./X");
+            let path = PathBuf::from("/X");
             let mut derivation = Derivation::new(&path, "mv $SRC $DEST".into()).unwrap();
             derivation.add_build_inputs(vec![
                 Expr::parse("jq").unwrap(),
