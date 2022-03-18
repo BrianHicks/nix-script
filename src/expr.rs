@@ -36,7 +36,7 @@ impl Expr {
             List::cast(root.inner().context("root did not have an inner node")?)
                 .context("could not parse this list as a list")?
                 .items()
-                .map(|node| Self::from_node(node))
+                .map(Self::from_node)
                 .collect(),
         )
     }
