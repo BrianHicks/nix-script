@@ -96,6 +96,8 @@ impl Opts {
 }
 
 fn main() {
+    env_logger::Builder::from_env("NIX_SCRIPT_LOG").init();
+
     let opts = Opts::parse();
 
     if let Err(err) = opts.run() {
