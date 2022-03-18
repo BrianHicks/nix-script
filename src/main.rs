@@ -42,6 +42,10 @@ struct Opts {
     #[clap(long)]
     root: Option<PathBuf>,
 
+    /// Where should we cache files?
+    #[clap(long("cache-directory"), env("NIX_SCRIPT_CACHE"))]
+    cache_directory: Option<PathBuf>,
+
     /// The script to run, plus any arguments. Any positional arguments after
     /// the script name will be passed on to the script.
     // Note: it'd be better to have a "script" and "args" field separately,
@@ -87,7 +91,15 @@ impl Opts {
 
         // TODO: create hash, check cache. If we've got a hit, proceed to the
         // last TODO in here.
+        let cache_directory = self
+            .get_cache_directory()
+            .context("couldn't get cache directory")?;
+        log::debug!(
+            "using `{}` as the cache directory",
+            cache_directory.display()
+        );
 
+        // TODO: this goes in the big `if` eventually
         let (root, target) = self
             .isolate_script(&script)
             .context("could not get an isolated build root for script")?;
@@ -108,7 +120,8 @@ impl Opts {
 
         // TODO: run the executable with the given args
 
-        println!("{}", derivation);
+        std::fs::write(cache_directory.join("default.nix"), derivation.to_string())
+            .context("could not write default.nix")?;
         Ok(())
     }
 
@@ -140,7 +153,10 @@ impl Opts {
 
             let tempdir = tempfile::Builder::new()
                 .prefix("nix-script-")
-                .tempdir_in("todo")
+                .tempdir_in(
+                    self.get_cache_directory()
+                        .context("could not get the cache directory")?,
+                )
                 .context("could not create temporary directory")?
                 .into_path();
 
@@ -186,6 +202,19 @@ impl Opts {
         };
 
         Ok(derivation)
+    }
+
+    fn get_cache_directory(&self) -> Result<PathBuf> {
+        match &self.cache_directory {
+            Some(explicit) => Ok(explicit.to_owned()),
+            None => {
+                let dirs = directories::ProjectDirs::from("zone", "bytes", "nix-script").context(
+                    "couldn't load HOME (set --cache-directory explicitly to get around this.)",
+                )?;
+
+                Ok(dirs.cache_dir().to_owned())
+            }
+        }
     }
 }
 
