@@ -79,12 +79,7 @@ impl Opts {
         log::trace!("parsing script and args");
         let mut script_and_args = self.script_and_args.iter();
 
-        let mut script = PathBuf::from(script_and_args.next().context("I need at least a script name to run, but didn't get one. Please pass that as the first positional argument and try again!")?);
-        if script.is_relative() {
-            script = std::env::current_dir()
-                .context("could not get current working directory")?
-                .join(script)
-        }
+        let script = PathBuf::from(script_and_args.next().context("I need at least a script name to run, but didn't get one. Please pass that as the first positional argument and try again!")?);
 
         Ok((script, self.script_and_args[1..].to_vec()))
     }
