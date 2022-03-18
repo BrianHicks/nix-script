@@ -4,7 +4,7 @@ use crate::expr::Expr;
 use anyhow::{Context, Result};
 use std::collections::HashMap;
 
-#[derive(Debug)]
+#[derive(Debug, serde::Serialize)]
 pub struct Directives<'src> {
     pub build_command: Option<&'src str>,
     pub build_inputs: Vec<Expr>,
