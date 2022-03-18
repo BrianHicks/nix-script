@@ -7,6 +7,7 @@ use crate::derivation::Derivation;
 use crate::directives::Directives;
 use anyhow::{Context, Result};
 use clap::Parser;
+use clean_path::clean_path;
 use std::fs;
 use std::path::{Path, PathBuf};
 
@@ -53,9 +54,10 @@ struct Opts {
 
 impl Opts {
     fn run(&self) -> Result<()> {
-        let (script, _args) = self
+        let (mut script, _args) = self
             .parse_script_and_args()
             .context("could not parse script and args")?;
+        script = clean_path(&script).context("could not clean path to script")?;
 
         let source = fs::read_to_string(&script).context("could not read script")?;
 
@@ -98,8 +100,10 @@ impl Opts {
     }
 
     fn isolate_script(&self, script: &Path) -> Result<(PathBuf, PathBuf)> {
-        if let Some(root) = &self.root {
-            let from_root = script.strip_prefix(root).context("could not find a path from the provided root to the script file (root must contain script)")?;
+        if let Some(raw_root) = &self.root {
+            let root = clean_path(&raw_root).context("could not clean path to root")?;
+
+            let from_root = script.strip_prefix(&root).context("could not find a path from the provided root to the script file (root must contain script)")?;
             log::debug!(
                 "calculated script path from root `{}` as `{}`",
                 root.display(),
