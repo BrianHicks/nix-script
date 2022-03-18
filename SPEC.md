@@ -100,7 +100,7 @@ Items that are expressions are left alone and items that appear to be references
 
 *status: speculative*
 
-Running `nix-script export` will print the derivation to stdout instead of building it.
+Running `nix-script --export path/to/script` will print the derivation to stdout instead of building it.
 We intend here to provide a mechanism for things like import-from-derivation.
 
 ## Caching
