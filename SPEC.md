@@ -21,7 +21,7 @@ Each section is tagged with done-ness and determined-ness, with one of these val
 
 ## Transformation to Derivations
 
-*status: defined*
+*status: partially implemented* (needs work, still, to get the correct files)
 
 `nix-script` parses extra shebang (`#!`) lines into arguments to `mkDerivation`.
 This set of shebangs, when placed in `cool-script`:
@@ -89,16 +89,15 @@ However, if this ends up being something that breaks your workflow please open a
 
 ### Lifting inputs
 
-*status: partially defined*
+*status: implemented*
 
 In the example above, `buildInputs` is not lifted to the top-level function arguments, but `runtimeInputs` is.
 To do this, we parse these shebangs as a list.
 Items that are expressions are left alone and items that appear to be references are lifted to the inputs.
-(The mechanism to do this is not precisely determined as of this writing!)
 
 ### Exporting
 
-*status: speculative*
+*status: partially implemented* (needs more thought on extra files)
 
 Running `nix-script --export path/to/script` will print the derivation to stdout instead of building it.
 We intend here to provide a mechanism for things like import-from-derivation.
@@ -164,27 +163,22 @@ Wrapper scripts may also use `nix-script` to manage their own dependencies.
 
 ### Parsing shebangs
 
-*status: speculative*
+*status: partially implemented* (schema not finalized)
 
 To help writing wrapper scripts, `nix-script` also provides a way to extract the shebang lines from a source file.
 For example: `nix-script --parse $1` in the script above, assuming no other arguments existed.
 
-The output will be a JSON object with the key as the first word in the shebang and the value as an object with at least a "raw" key containing the string form of the rest of the line.
 For example:
 
 ```json
 {
-  "buildInputs": {
-    "raw": "(haskellPackages.ghcWithPackages (ps: [ ps.aeson ps.text ]))"
-  },
-  "runtimeInputs": {
-    "raw": "jq"
-  },
-  "buildPhase": {
-    "raw": "mv $SRC $SRC.hs; ghc -o $OUT $SRC.hs"
-  }
+  "build_command": "mv $SRC $SRC.hs; ghc -o $OUT $SRC.hs",
+  "build_inputs": [
+    {
+      "raw": "haskellPackages.ghcWithPackages (ps: [ ps.text ])"
+    }
+  ],
+  "interpreter": null,
+  "runtime_inputs": []
 }
 ```
-
-Certain keys may be parsed, in which case their parsed forms will be available in other keys in the object.
-However, this is not yet defined.
