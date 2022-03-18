@@ -1,5 +1,6 @@
 mod inputs;
 
+use crate::clean_path::clean_path;
 use crate::expr::Expr;
 use anyhow::{Context, Result};
 use inputs::Inputs;
@@ -13,6 +14,7 @@ pub struct Derivation {
 
     name: String,
     src: PathBuf,
+    root: PathBuf,
 
     build_command: String,
 
@@ -23,7 +25,7 @@ pub struct Derivation {
 }
 
 impl Derivation {
-    pub fn new(src: &Path, build_command: &str) -> Result<Self> {
+    pub fn new(root: &Path, src: &Path, build_command: &str) -> Result<Self> {
         Ok(Self {
             inputs: Inputs::from(vec![("pkgs".into(), Some("import <nixpkgs> { }".into()))]),
             name: src
@@ -31,24 +33,8 @@ impl Derivation {
                 .and_then(|name| name.to_str())
                 .map(|name| name.to_owned())
                 .context("could not determine derivation name from input path")?,
-            src: match src.parent() {
-                Some(path) => {
-                    if path.is_relative() {
-                        anyhow::bail!("I need an absolute path as source")
-                    } else if path.parent() == None {
-                        log::trace!("got the absolute root as a parent. Reformatting for Nix.");
-                        // no parent means we're at the root and we need to
-                        // format the path just a little differently so Nix
-                        // will be fine with it.
-                        PathBuf::from("/.")
-                    } else {
-                        path.to_path_buf()
-                    }
-                }
-                None => anyhow::bail!(
-                    "could not determine an absolute path from the given source directory"
-                ),
-            },
+            src: src.to_owned(),
+            root: clean_path(root).context("could not determine path to source for derivation")?,
             build_command: build_command.to_owned(),
             build_inputs: BTreeSet::new(),
             interpreter: None,
@@ -124,7 +110,7 @@ impl Display for Derivation {
             "{}:\npkgs.stdenv.mkDerivation {{\n  name = \"{}\";\n  src = {};\n\n",
             self.inputs,
             self.name,
-            self.src.display(),
+            self.root.display(),
         )?;
 
         if !self.build_inputs.is_empty() {
@@ -137,7 +123,8 @@ impl Display for Derivation {
         write!(
             f,
             "  buildPhase = ''\n    SRC={}\n\n    mkdir bin\n    OUT=bin/{}\n\n",
-            self.name, self.name,
+            self.src.display(),
+            self.name,
         )?;
         if self.build_command.is_empty() {
             write!(f, "    echo build command is not set\n    exit 1\n")?;
@@ -229,16 +216,18 @@ mod tests {
 
         #[test]
         fn empty() {
-            let path: PathBuf = ["/", "path", "to", "my", "cool-script"].iter().collect();
-            let derivation = Derivation::new(&path, "mv $SRC $DEST").unwrap();
+            let root = PathBuf::from("/");
+            let path: PathBuf = ["path", "to", "my", "cool-script"].iter().collect();
+            let derivation = Derivation::new(&root, &path, "mv $SRC $DEST").unwrap();
 
             assert_no_errors(&derivation.to_string());
         }
 
         #[test]
         fn with_build_inputs() {
-            let path = PathBuf::from("/X");
-            let mut derivation = Derivation::new(&path, "mv $SRC $DEST").unwrap();
+            let root = PathBuf::from("/");
+            let path = PathBuf::from("X");
+            let mut derivation = Derivation::new(&root, &path, "mv $SRC $DEST").unwrap();
             derivation.add_build_inputs(vec![
                 Expr::parse("jq").unwrap(),
                 Expr::parse("bash").unwrap(),
@@ -249,8 +238,9 @@ mod tests {
 
         #[test]
         fn with_runtime_inputs() {
-            let path = PathBuf::from("/X");
-            let mut derivation = Derivation::new(&path, "mv $SRC $DEST").unwrap();
+            let root = PathBuf::from("/");
+            let path = PathBuf::from("X");
+            let mut derivation = Derivation::new(&root, &path, "mv $SRC $DEST").unwrap();
             derivation.add_runtime_inputs(vec![Expr::parse("jq").unwrap()]);
 
             assert_no_errors(&derivation.to_string());
@@ -258,8 +248,9 @@ mod tests {
 
         #[test]
         fn with_interpreter() {
-            let path = PathBuf::from("/X");
-            let mut derivation = Derivation::new(&path, "mv $SRC $DEST").unwrap();
+            let root = PathBuf::from("/");
+            let path = PathBuf::from("X");
+            let mut derivation = Derivation::new(&root, &path, "mv $SRC $DEST").unwrap();
             derivation.set_interpreter("bash").unwrap();
 
             assert_no_errors(&derivation.to_string());
