@@ -214,6 +214,7 @@ dependencies = [
  "anyhow",
  "clap",
  "env_logger",
+ "lazy_static",
  "log",
  "rnix",
  "serde",

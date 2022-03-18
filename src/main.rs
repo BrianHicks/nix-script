@@ -1,3 +1,4 @@
+mod clean_path;
 mod derivation;
 mod directives;
 mod expr;
@@ -76,7 +77,7 @@ impl Opts {
         log::error!("{}, {}", root.display(), target.display());
 
         let derivation = self
-            .derivation(&script, directives)
+            .derivation(&root, &script, directives)
             .context("could not generate derivation")?;
 
         if self.export {
@@ -124,7 +125,7 @@ impl Opts {
         }
     }
 
-    fn derivation(&self, script: &Path, directives: Directives) -> Result<Derivation> {
+    fn derivation(&self, root: &Path, script: &Path, directives: Directives) -> Result<Derivation> {
         let build_command = if let Some(from_opts) = &self.build_command {
             log::debug!("using build command from opts");
             from_opts
@@ -135,8 +136,8 @@ impl Opts {
             anyhow::bail!("Need a build command, either by specifying a `build` directive or passing the `--build` option.")
         };
 
-        let mut derivation =
-            Derivation::new(script, build_command).context("could not create a Nix derivation")?;
+        let mut derivation = Derivation::new(root, script, build_command)
+            .context("could not create a Nix derivation")?;
 
         log::trace!("adding build inputs");
         derivation.add_build_inputs(directives.build_inputs);
