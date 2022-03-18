@@ -1,3 +1,4 @@
+mod clean_path;
 mod derivation;
 mod directives;
 mod expr;
@@ -6,6 +7,7 @@ use crate::derivation::Derivation;
 use crate::directives::Directives;
 use anyhow::{Context, Result};
 use clap::Parser;
+use clean_path::clean_path;
 use std::fs;
 use std::path::{Path, PathBuf};
 
@@ -34,6 +36,12 @@ struct Opts {
     #[clap(long("export"), conflicts_with("parse"))]
     export: bool,
 
+    /// Use this folder as the root for any building we do. You can use this
+    /// to bring other files into scope in your build. If there is a `default.nix`
+    /// file in the specified root, we will use that instead of generating our own.
+    #[clap(long)]
+    root: Option<PathBuf>,
+
     /// The script to run, plus any arguments. Any positional arguments after
     /// the script name will be passed on to the script.
     // Note: it'd be better to have a "script" and "args" field separately,
@@ -46,32 +54,61 @@ struct Opts {
 
 impl Opts {
     fn run(&self) -> Result<()> {
-        let (script, _args) = self
+        // First things first: what are we running? Where does it live? What
+        // are its arguments?
+        let (mut script, _args) = self
             .parse_script_and_args()
             .context("could not parse script and args")?;
+        script = clean_path(&script).context("could not clean path to script")?;
 
         let source = fs::read_to_string(&script).context("could not read script")?;
 
         let directives = Directives::parse(&self.indicator, &source)
             .context("could not construct a directive parser")?;
 
+        // First place we might bail early: if a script just wants to parse
+        // directives using our parser, we dump JSON and quit instead of running.
         if self.parse {
             println!(
                 "{}",
                 serde_json::to_string(&directives).context("could not serialize directives")?
             );
-            std::process::exit(0);
+            return Ok(());
         }
+
+        // We check here instead of inside isolate_script or similar so we
+        // can get an early bail that doesn't create trash in the system's
+        // temporary directories.
+        if self.export && self.root.is_none() {
+            anyhow::bail!(
+                "I don't have a root to refer to while exporting, so I can't isolate the script and dependencies. Specify a --root and try this again!"
+            )
+        }
+
+        // TODO: create hash, check cache. If we've got a hit, proceed to the
+        // last TODO in here.
+
+        let (root, target) = self
+            .isolate_script(&script)
+            .context("could not get an isolated build root for script")?;
 
         let derivation = self
-            .derivation(&script, directives)
+            .derivation(&root, &target, directives)
             .context("could not generate derivation")?;
 
+        // Second place we can bail early: if someone wants the generated
+        // derivation to do IFD or similar
         if self.export {
             println!("{}", derivation);
-            std::process::exit(0);
+            return Ok(());
         }
 
+        // TODO: figure out which `default.nix` we want
+        // TODO: run `nix-build` and get the store path
+
+        // TODO: run the executable with the given args
+
+        println!("{}", derivation);
         Ok(())
     }
 
@@ -79,17 +116,42 @@ impl Opts {
         log::trace!("parsing script and args");
         let mut script_and_args = self.script_and_args.iter();
 
-        let mut script = PathBuf::from(script_and_args.next().context("I need at least a script name to run, but didn't get one. Please pass that as the first positional argument and try again!")?);
-        if script.is_relative() {
-            script = std::env::current_dir()
-                .context("could not get current working directory")?
-                .join(script)
-        }
+        let script = PathBuf::from(script_and_args.next().context("I need at least a script name to run, but didn't get one. Please pass that as the first positional argument and try again!")?);
 
         Ok((script, self.script_and_args[1..].to_vec()))
     }
 
-    fn derivation(&self, script: &Path, directives: Directives) -> Result<Derivation> {
+    fn isolate_script(&self, script: &Path) -> Result<(PathBuf, PathBuf)> {
+        if let Some(raw_root) = &self.root {
+            let root = clean_path(raw_root).context("could not clean path to root")?;
+
+            let from_root = script.strip_prefix(&root).context("could not find a path from the provided root to the script file (root must contain script)")?;
+            log::debug!(
+                "calculated script path from root `{}` as `{}`",
+                root.display(),
+                from_root.display()
+            );
+
+            Ok((root.to_owned(), from_root.to_owned()))
+        } else {
+            let target_name = script
+                .file_name()
+                .context("could not get file name from script name")?;
+
+            let tempdir = tempfile::Builder::new()
+                .prefix("nix-script-")
+                .tempdir_in("todo")
+                .context("could not create temporary directory")?
+                .into_path();
+
+            std::fs::copy(script, tempdir.join(target_name))
+                .context("could not copy script to temporary directory")?;
+
+            Ok((tempdir, target_name.into()))
+        }
+    }
+
+    fn derivation(&self, root: &Path, script: &Path, directives: Directives) -> Result<Derivation> {
         let build_command = if let Some(from_opts) = &self.build_command {
             log::debug!("using build command from opts");
             from_opts
@@ -100,8 +162,8 @@ impl Opts {
             anyhow::bail!("Need a build command, either by specifying a `build` directive or passing the `--build` option.")
         };
 
-        let mut derivation =
-            Derivation::new(script, build_command).context("could not create a Nix derivation")?;
+        let mut derivation = Derivation::new(root, script, build_command)
+            .context("could not create a Nix derivation")?;
 
         log::trace!("adding build inputs");
         derivation.add_build_inputs(directives.build_inputs);
