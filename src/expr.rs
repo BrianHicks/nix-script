@@ -4,9 +4,10 @@ use rnix::{SyntaxKind, SyntaxNode};
 use std::cmp::Ordering;
 use std::fmt::{self, Display};
 
-#[derive(Debug, Eq, Hash)]
+#[derive(Debug, Eq, Hash, serde::Serialize)]
 pub struct Expr {
     raw: String,
+    #[serde(skip)]
     parsed: SyntaxNode,
 }
 

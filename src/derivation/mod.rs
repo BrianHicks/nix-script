@@ -8,33 +8,35 @@ use std::fmt::{self, Display};
 use std::path::{Path, PathBuf};
 
 #[derive(Debug)]
-pub struct Derivation<'path, 'src> {
+pub struct Derivation {
     inputs: Inputs,
 
-    name: &'path str,
+    name: String,
     src: PathBuf,
 
-    build_command: &'src str,
+    build_command: String,
 
     build_inputs: BTreeSet<Expr>,
 
-    interpreter: Option<(&'src str, Option<&'src str>)>,
+    interpreter: Option<(String, Option<String>)>,
     runtime_inputs: BTreeSet<Expr>,
 }
 
-impl<'path, 'src> Derivation<'path, 'src> {
-    pub fn new(src: &'path Path, build_command: &'src str) -> Result<Self> {
+impl Derivation {
+    pub fn new(src: &Path, build_command: &str) -> Result<Self> {
         Ok(Self {
             inputs: Inputs::from(vec![("pkgs".into(), Some("import <nixpkgs> { }".into()))]),
             name: src
                 .file_name()
                 .and_then(|name| name.to_str())
+                .map(|name| name.to_owned())
                 .context("could not determine derivation name from input path")?,
             src: match src.parent() {
                 Some(path) => {
                     if path.is_relative() {
                         anyhow::bail!("I need an absolute path as source")
                     } else if path.parent() == None {
+                        log::trace!("got the absolute root as a parent. Reformatting for Nix.");
                         // no parent means we're at the root and we need to
                         // format the path just a little differently so Nix
                         // will be fine with it.
@@ -47,7 +49,7 @@ impl<'path, 'src> Derivation<'path, 'src> {
                     "could not determine an absolute path from the given source directory"
                 ),
             },
-            build_command,
+            build_command: build_command.to_owned(),
             build_inputs: BTreeSet::new(),
             interpreter: None,
             runtime_inputs: BTreeSet::new(),
@@ -57,6 +59,7 @@ impl<'path, 'src> Derivation<'path, 'src> {
     pub fn add_build_inputs(&mut self, build_inputs: Vec<Expr>) {
         for build_input in build_inputs {
             if build_input.is_extractable() {
+                log::trace!("extracting build input `{}`", build_input);
                 self.inputs.insert(
                     build_input.to_string(),
                     Some(format!("pkgs.{}", build_input)),
@@ -66,7 +69,7 @@ impl<'path, 'src> Derivation<'path, 'src> {
         }
     }
 
-    pub fn set_interpreter(&mut self, interpreter: &'src str) -> Result<()> {
+    pub fn set_interpreter(&mut self, interpreter: &str) -> Result<()> {
         let trimmed = interpreter.trim();
         let mut words = trimmed.split(" ");
 
@@ -76,16 +79,27 @@ impl<'path, 'src> Derivation<'path, 'src> {
 
         let args = trimmed[command.len()..].trim();
 
-        self.interpreter = Some((command, if args.is_empty() { None } else { Some(args) }));
+        self.interpreter = Some((
+            command.to_owned(),
+            if args.is_empty() {
+                None
+            } else {
+                Some(args.to_owned())
+            },
+        ));
+
+        log::debug!("depending on makeWrapper since we have an interpreter");
         self.depend_on_make_wrapper();
 
         Ok(())
     }
 
     pub fn add_runtime_inputs(&mut self, runtime_inputs: Vec<Expr>) {
+        log::debug!("depending on makeWrapper since we have runtime inputs");
         self.depend_on_make_wrapper();
         for runtime_input in runtime_inputs {
             if runtime_input.is_extractable() {
+                log::trace!("extracting build input `{}`", runtime_input);
                 self.inputs.insert(
                     runtime_input.to_string(),
                     Some(format!("pkgs.{}", runtime_input)),
@@ -102,7 +116,8 @@ impl<'path, 'src> Derivation<'path, 'src> {
         );
     }
 }
-impl Display for Derivation<'_, '_> {
+
+impl Display for Derivation {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> Result<(), fmt::Error> {
         write!(
             f,
@@ -113,7 +128,7 @@ impl Display for Derivation<'_, '_> {
         )?;
 
         if self.build_inputs.len() > 0 {
-            write!(f, "\n  buildInputs = with pkgs; [")?;
+            write!(f, "  buildInputs = with pkgs; [")?;
 
             for input in &self.build_inputs {
                 if input.needs_parens_in_list() {
