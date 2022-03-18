@@ -71,7 +71,7 @@ impl Derivation {
 
     pub fn set_interpreter(&mut self, interpreter: &str) -> Result<()> {
         let trimmed = interpreter.trim();
-        let mut words = trimmed.split(" ");
+        let mut words = trimmed.split(' ');
 
         let command = words
             .next()
@@ -127,7 +127,7 @@ impl Display for Derivation {
             self.src.display(),
         )?;
 
-        if self.build_inputs.len() > 0 {
+        if !self.build_inputs.is_empty() {
             write!(f, "  buildInputs = with pkgs; [")?;
 
             for input in &self.build_inputs {
@@ -138,7 +138,7 @@ impl Display for Derivation {
                 }
             }
 
-            write!(f, " ];\n")?;
+            writeln!(f, " ];")?;
         }
 
         // build phase
@@ -150,7 +150,7 @@ impl Display for Derivation {
         if self.build_command.is_empty() {
             write!(f, "    echo build command is not set\n    exit 1\n")?;
         } else {
-            write!(f, "    {}\n", self.build_command)?;
+            writeln!(f, "    {}", self.build_command)?;
         }
         write!(f, "  '';\n\n")?;
 
@@ -228,7 +228,7 @@ mod tests {
         #[test]
         fn empty() {
             let path: PathBuf = ["/", "path", "to", "my", "cool-script"].iter().collect();
-            let derivation = Derivation::new(&path, "mv $SRC $DEST".into()).unwrap();
+            let derivation = Derivation::new(&path, "mv $SRC $DEST").unwrap();
 
             assert_no_errors(&derivation.to_string());
         }
@@ -236,7 +236,7 @@ mod tests {
         #[test]
         fn with_build_inputs() {
             let path = PathBuf::from("/X");
-            let mut derivation = Derivation::new(&path, "mv $SRC $DEST".into()).unwrap();
+            let mut derivation = Derivation::new(&path, "mv $SRC $DEST").unwrap();
             derivation.add_build_inputs(vec![
                 Expr::parse("jq").unwrap(),
                 Expr::parse("bash").unwrap(),
@@ -248,7 +248,7 @@ mod tests {
         #[test]
         fn with_runtime_inputs() {
             let path = PathBuf::from("/X");
-            let mut derivation = Derivation::new(&path, "mv $SRC $DEST".into()).unwrap();
+            let mut derivation = Derivation::new(&path, "mv $SRC $DEST").unwrap();
             derivation.add_runtime_inputs(vec![Expr::parse("jq").unwrap()]);
 
             assert_no_errors(&derivation.to_string());
@@ -257,7 +257,7 @@ mod tests {
         #[test]
         fn with_interpreter() {
             let path = PathBuf::from("/X");
-            let mut derivation = Derivation::new(&path, "mv $SRC $DEST".into()).unwrap();
+            let mut derivation = Derivation::new(&path, "mv $SRC $DEST").unwrap();
             derivation.set_interpreter("bash").unwrap();
 
             assert_no_errors(&derivation.to_string());
