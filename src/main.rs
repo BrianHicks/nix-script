@@ -55,6 +55,7 @@ impl Opts {
     }
 
     fn parse_script_and_args(&self) -> Result<(PathBuf, Vec<String>)> {
+        log::debug!("script and args: {:?}", self.script_and_args);
         let mut script_and_args = self.script_and_args.iter();
 
         let mut script = PathBuf::from(script_and_args.next().context("I need at least a script name to run, but didn't get one. Please pass that as the first positional argument and try again!")?);
