@@ -36,7 +36,7 @@ jobs:
 
       - run: nix develop --command rustfmt --check $(find . -name "*.rs" -not -ipath '*target*')
 
-  rustfmt:
+  clippy:
     name: clippy
     runs-on: ubuntu-latest
     steps:
