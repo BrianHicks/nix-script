@@ -34,6 +34,12 @@ struct Opts {
     #[clap(long("export"), conflicts_with("parse"))]
     export: bool,
 
+    /// Use this folder as the root for any building we do. You can use this
+    /// to bring other files into scope in your build. If there is a `default.nix`
+    /// file in the specified root, we will use that instead of generating our own.
+    #[clap(long)]
+    root: Option<PathBuf>,
+
     /// The script to run, plus any arguments. Any positional arguments after
     /// the script name will be passed on to the script.
     // Note: it'd be better to have a "script" and "args" field separately,
@@ -63,6 +69,12 @@ impl Opts {
             std::process::exit(0);
         }
 
+        let (root, target) = self
+            .isolate_script(&script)
+            .context("could not get an isolated build root for script")?;
+
+        log::error!("{}, {}", root.display(), target.display());
+
         let derivation = self
             .derivation(&script, directives)
             .context("could not generate derivation")?;
@@ -82,6 +94,34 @@ impl Opts {
         let script = PathBuf::from(script_and_args.next().context("I need at least a script name to run, but didn't get one. Please pass that as the first positional argument and try again!")?);
 
         Ok((script, self.script_and_args[1..].to_vec()))
+    }
+
+    fn isolate_script(&self, script: &Path) -> Result<(PathBuf, PathBuf)> {
+        if let Some(root) = &self.root {
+            let from_root = script.strip_prefix(root).context("could not find a path from the provided root to the script file (root must contain script)")?;
+            log::debug!(
+                "calculated script path from root `{}` as `{}`",
+                root.display(),
+                from_root.display()
+            );
+
+            Ok((root.to_owned(), from_root.to_owned()))
+        } else {
+            let target_name = script
+                .file_name()
+                .context("could not get file name from script name")?;
+
+            let tempdir = tempfile::Builder::new()
+                .prefix("nix-script-")
+                .tempdir_in("todo")
+                .context("could not create temporary directory")?
+                .into_path();
+
+            std::fs::copy(script, tempdir.join(target_name))
+                .context("could not copy script to temporary directory")?;
+
+            Ok((tempdir, target_name.into()))
+        }
     }
 
     fn derivation(&self, script: &Path, directives: Directives) -> Result<Derivation> {
