@@ -82,9 +82,10 @@ impl Opts {
 
         if self.export {
             println!("{}", derivation);
-            std::process::exit(0);
+            return Ok(());
         }
 
+        println!("{}", derivation);
         Ok(())
     }
 
