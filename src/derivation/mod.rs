@@ -147,6 +147,12 @@ impl Display for Derivation {
         write!(f, "  '';\n\n")?;
 
         // install phase
+        if !self.runtime_inputs.is_empty() {
+            write!(f, "  nativeBuildInputs = ")?;
+            fmt_list(f, &self.runtime_inputs)?;
+            write!(f, ";\n")?;
+        }
+
         write!(
             f,
             "  installPhase = ''\n    mkdir -p $out\n    mv bin $out/bin"
