@@ -128,17 +128,9 @@ impl Display for Derivation {
         )?;
 
         if !self.build_inputs.is_empty() {
-            write!(f, "  buildInputs = with pkgs; [")?;
-
-            for input in &self.build_inputs {
-                if input.needs_parens_in_list() {
-                    write!(f, " ({})", input)?;
-                } else {
-                    write!(f, " {}", input)?;
-                }
-            }
-
-            writeln!(f, " ];")?;
+            write!(f, "  buildInputs = with pkgs; ")?;
+            fmt_list(f, &self.build_inputs)?;
+            writeln!(f, ";")?;
         }
 
         // build phase
@@ -191,23 +183,27 @@ impl Display for Derivation {
             }
 
             if !self.runtime_inputs.is_empty() {
-                write!(f, " \\\n        --prefix PATH : ${{pkgs.lib.makeBinPath [ ")?;
-
-                for input in &self.runtime_inputs {
-                    if input.needs_parens_in_list() {
-                        write!(f, "({}) ", input)?;
-                    } else {
-                        write!(f, "{} ", input)?;
-                    }
-                }
-
-                write!(f, "]}}")?;
+                write!(f, " \\\n        --prefix PATH : ${{pkgs.lib.makeBinPath ")?;
+                fmt_list(f, &self.runtime_inputs)?;
+                write!(f, "}}")?;
             }
         }
         write!(f, "\n  '';\n")?;
 
         write!(f, "}}")
     }
+}
+
+fn fmt_list(f: &mut fmt::Formatter<'_>, inputs: &BTreeSet<Expr>) -> Result<(), fmt::Error> {
+    write!(f, "[")?;
+    for input in inputs {
+        if input.needs_parens_in_list() {
+            write!(f, " ({})", input)?;
+        } else {
+            write!(f, " {}", input)?;
+        }
+    }
+    write!(f, " ]")
 }
 
 #[cfg(test)]
