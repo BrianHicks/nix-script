@@ -62,20 +62,14 @@ impl Expr {
     }
 
     pub fn is_extractable(&self) -> bool {
-        match self.parsed.kind() {
-            SyntaxKind::NODE_IDENT => true,
-            _ => false,
-        }
+        matches!(self.parsed.kind(), SyntaxKind::NODE_IDENT)
     }
 
     pub fn needs_parens_in_list(&self) -> bool {
         // We're explicit that we don't need tokens most of the time (instead
         // of being explicit when we *do* need them) since it's always safe to
         // add more parentheses but not always safe to leave them off.
-        match self.parsed.kind() {
-            SyntaxKind::NODE_IDENT => false,
-            _ => true,
-        }
+        !matches!(self.parsed.kind(), SyntaxKind::NODE_IDENT)
     }
 }
 
