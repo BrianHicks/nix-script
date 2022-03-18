@@ -24,6 +24,11 @@ struct Opts {
     #[clap(long("interpreter"))]
     interpreter: Option<String>,
 
+    /// Instead of executing the script, parse directives from the file and
+    /// print them as JSON to stdout
+    #[clap(long("parse"))]
+    parse: bool,
+
     /// The script to run, plus any arguments. Any positional arguments after
     /// the script name will be passed on to the script.
     // Note: it'd be better to have a "script" and "args" field separately,
@@ -44,6 +49,14 @@ impl Opts {
 
         let directives = Directives::parse(&self.indicator, &source)
             .context("could not construct a directive parser")?;
+
+        if self.parse {
+            println!(
+                "{}",
+                serde_json::to_string(&directives).context("could not serialize directives")?
+            );
+            std::process::exit(0);
+        }
 
         let derivation = self
             .derivation(&script, directives)

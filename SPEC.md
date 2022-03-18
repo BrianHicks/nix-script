@@ -167,7 +167,7 @@ Wrapper scripts may also use `nix-script` to manage their own dependencies.
 *status: speculative*
 
 To help writing wrapper scripts, `nix-script` also provides a way to extract the shebang lines from a source file.
-For example: `nix-script parse $1` in the script above, assuming no other arguments existed.
+For example: `nix-script --parse $1` in the script above, assuming no other arguments existed.
 
 The output will be a JSON object with the key as the first word in the shebang and the value as an object with at least a "raw" key containing the string form of the rest of the line.
 For example:
