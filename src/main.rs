@@ -72,6 +72,12 @@ impl Opts {
             std::process::exit(0);
         }
 
+        if self.export && self.root.is_none() {
+            anyhow::bail!(
+                "I don't have a root to refer to while exporting, so I can't isolate the script and dependencies. Specify a --root and try this again!"
+            )
+        }
+
         let (root, target) = self
             .isolate_script(&script)
             .context("could not get an isolated build root for script")?;
