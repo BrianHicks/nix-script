@@ -205,16 +205,22 @@ impl Opts {
     }
 
     fn get_cache_directory(&self) -> Result<PathBuf> {
-        match &self.cache_directory {
-            Some(explicit) => Ok(explicit.to_owned()),
+        let target = match &self.cache_directory {
+            Some(explicit) => explicit.to_owned(),
             None => {
                 let dirs = directories::ProjectDirs::from("zone", "bytes", "nix-script").context(
                     "couldn't load HOME (set --cache-directory explicitly to get around this.)",
                 )?;
 
-                Ok(dirs.cache_dir().to_owned())
+                dirs.cache_dir().to_owned()
             }
+        };
+
+        if !target.exists() {
+            std::fs::create_dir_all(&target).context("could not create cache directory")?;
         }
+
+        Ok(target)
     }
 }
 
