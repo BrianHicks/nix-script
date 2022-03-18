@@ -77,7 +77,7 @@ impl Opts {
             .context("could not get an isolated build root for script")?;
 
         let derivation = self
-            .derivation(&root, &script, directives)
+            .derivation(&root, &target, directives)
             .context("could not generate derivation")?;
 
         if self.export {
