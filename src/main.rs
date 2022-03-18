@@ -123,7 +123,7 @@ impl Opts {
 
     fn isolate_script(&self, script: &Path) -> Result<(PathBuf, PathBuf)> {
         if let Some(raw_root) = &self.root {
-            let root = clean_path(&raw_root).context("could not clean path to root")?;
+            let root = clean_path(raw_root).context("could not clean path to root")?;
 
             let from_root = script.strip_prefix(&root).context("could not find a path from the provided root to the script file (root must contain script)")?;
             log::debug!(
