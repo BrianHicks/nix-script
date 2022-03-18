@@ -36,12 +36,12 @@ impl Parser {
                     continue;
                 }
 
-                let entry = out.entry(key).or_insert_with(|| Vec::new());
+                let entry = out.entry(key).or_insert_with(Vec::new);
                 entry.push(value);
             }
         }
 
-        return out;
+        out
     }
 }
 
