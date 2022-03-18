@@ -76,8 +76,6 @@ impl Opts {
             .isolate_script(&script)
             .context("could not get an isolated build root for script")?;
 
-        log::error!("{}, {}", root.display(), target.display());
-
         let derivation = self
             .derivation(&root, &script, directives)
             .context("could not generate derivation")?;
