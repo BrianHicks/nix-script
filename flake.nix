@@ -14,8 +14,12 @@
         packages.nix-script = naersk-lib.buildPackage {
           root = ./.;
 
+          buildInputs = [ pkgs.clippy ];
           doCheck = true;
-          checkPhase = "cargo test";
+          checkPhase = ''
+            cargo test
+            cargo clippy -- --deny warnings
+          '';
         };
 
         defaultPackage = packages.nix-script;
