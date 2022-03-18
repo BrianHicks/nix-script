@@ -150,7 +150,7 @@ impl Display for Derivation {
         if !self.runtime_inputs.is_empty() {
             write!(f, "  nativeBuildInputs = ")?;
             fmt_list(f, &self.runtime_inputs)?;
-            write!(f, ";\n")?;
+            writeln!(f, ";")?;
         }
 
         write!(
