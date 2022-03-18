@@ -76,7 +76,7 @@ impl Opts {
     }
 
     fn parse_script_and_args(&self) -> Result<(PathBuf, Vec<String>)> {
-        log::debug!("parsing script and args");
+        log::trace!("parsing script and args");
         let mut script_and_args = self.script_and_args.iter();
 
         let mut script = PathBuf::from(script_and_args.next().context("I need at least a script name to run, but didn't get one. Please pass that as the first positional argument and try again!")?);
@@ -131,7 +131,7 @@ fn main() {
     env_logger::Builder::from_env("NIX_SCRIPT_LOG").init();
 
     let opts = Opts::parse();
-    log::debug!("opts: {:?}", opts);
+    log::trace!("opts: {:?}", opts);
 
     if let Err(err) = opts.run() {
         eprintln!("{:?}", err);

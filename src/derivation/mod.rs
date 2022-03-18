@@ -36,6 +36,7 @@ impl Derivation {
                     if path.is_relative() {
                         anyhow::bail!("I need an absolute path as source")
                     } else if path.parent() == None {
+                        log::trace!("got the absolute root as a parent. Reformatting for Nix.");
                         // no parent means we're at the root and we need to
                         // format the path just a little differently so Nix
                         // will be fine with it.
@@ -58,6 +59,7 @@ impl Derivation {
     pub fn add_build_inputs(&mut self, build_inputs: Vec<Expr>) {
         for build_input in build_inputs {
             if build_input.is_extractable() {
+                log::trace!("extracting build input `{}`", build_input);
                 self.inputs.insert(
                     build_input.to_string(),
                     Some(format!("pkgs.{}", build_input)),
@@ -85,15 +87,19 @@ impl Derivation {
                 Some(args.to_owned())
             },
         ));
+
+        log::debug!("depending on makeWrapper since we have an interpreter");
         self.depend_on_make_wrapper();
 
         Ok(())
     }
 
     pub fn add_runtime_inputs(&mut self, runtime_inputs: Vec<Expr>) {
+        log::debug!("depending on makeWrapper since we have runtime inputs");
         self.depend_on_make_wrapper();
         for runtime_input in runtime_inputs {
             if runtime_input.is_extractable() {
+                log::trace!("extracting build input `{}`", runtime_input);
                 self.inputs.insert(
                     runtime_input.to_string(),
                     Some(format!("pkgs.{}", runtime_input)),
