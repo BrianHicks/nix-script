@@ -26,8 +26,13 @@ struct Opts {
 
     /// Instead of executing the script, parse directives from the file and
     /// print them as JSON to stdout
-    #[clap(long("parse"))]
+    #[clap(long("parse"), conflicts_with("export"))]
     parse: bool,
+
+    /// Instead of executing the script, print the derivation we'd build
+    /// to stdout
+    #[clap(long("export"), conflicts_with("parse"))]
+    export: bool,
 
     /// The script to run, plus any arguments. Any positional arguments after
     /// the script name will be passed on to the script.
@@ -62,7 +67,10 @@ impl Opts {
             .derivation(&script, directives)
             .context("could not generate derivation")?;
 
-        println!("{}", derivation);
+        if self.export {
+            println!("{}", derivation);
+            std::process::exit(0);
+        }
 
         Ok(())
     }
