@@ -54,6 +54,8 @@ struct Opts {
 
 impl Opts {
     fn run(&self) -> Result<()> {
+        // First things first: what are we running? Where does it live? What
+        // are its arguments?
         let (mut script, _args) = self
             .parse_script_and_args()
             .context("could not parse script and args")?;
@@ -64,19 +66,27 @@ impl Opts {
         let directives = Directives::parse(&self.indicator, &source)
             .context("could not construct a directive parser")?;
 
+        // First place we might bail early: if a script just wants to parse
+        // directives using our parser, we dump JSON and quit instead of running.
         if self.parse {
             println!(
                 "{}",
                 serde_json::to_string(&directives).context("could not serialize directives")?
             );
-            std::process::exit(0);
+            return Ok(());
         }
 
+        // We check here instead of inside isolate_script or similar so we
+        // can get an early bail that doesn't create trash in the system's
+        // temporary directories.
         if self.export && self.root.is_none() {
             anyhow::bail!(
                 "I don't have a root to refer to while exporting, so I can't isolate the script and dependencies. Specify a --root and try this again!"
             )
         }
+
+        // TODO: create hash, check cache. If we've got a hit, proceed to the
+        // last TODO in here.
 
         let (root, target) = self
             .isolate_script(&script)
@@ -86,10 +96,17 @@ impl Opts {
             .derivation(&root, &target, directives)
             .context("could not generate derivation")?;
 
+        // Second place we can bail early: if someone wants the generated
+        // derivation to do IFD or similar
         if self.export {
             println!("{}", derivation);
             return Ok(());
         }
+
+        // TODO: figure out which `default.nix` we want
+        // TODO: run `nix-build` and get the store path
+
+        // TODO: run the executable with the given args
 
         println!("{}", derivation);
         Ok(())
