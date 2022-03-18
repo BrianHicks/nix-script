@@ -68,7 +68,7 @@ impl Opts {
     }
 
     fn parse_script_and_args(&self) -> Result<(PathBuf, Vec<String>)> {
-        log::debug!("script and args: {:?}", self.script_and_args);
+        log::debug!("parsing script and args");
         let mut script_and_args = self.script_and_args.iter();
 
         let mut script = PathBuf::from(script_and_args.next().context("I need at least a script name to run, but didn't get one. Please pass that as the first positional argument and try again!")?);
@@ -83,8 +83,10 @@ impl Opts {
 
     fn derivation(&self, script: &Path, directives: Directives) -> Result<Derivation> {
         let build_command = if let Some(from_opts) = &self.build_command {
+            log::debug!("using build command from opts");
             from_opts
         } else if let Some(from_directives) = directives.build_command {
+            log::debug!("using build command from directives");
             from_directives
         } else {
             anyhow::bail!("Need a build command, either by specifying a `build` directive or passing the `--build` option.")
@@ -92,17 +94,25 @@ impl Opts {
 
         let mut derivation =
             Derivation::new(script, build_command).context("could not create a Nix derivation")?;
+
+        log::trace!("adding build inputs");
         derivation.add_build_inputs(directives.build_inputs);
+
+        log::trace!("adding runtime inputs");
         derivation.add_runtime_inputs(directives.runtime_inputs);
 
         if let Some(from_opts) = &self.interpreter {
+            log::debug!("using interpreter from opts");
             derivation
                 .set_interpreter(from_opts)
                 .context("could not set interpreter from command-line flags")?
         } else if let Some(from_directives) = directives.interpreter {
+            log::debug!("using interpreter from directives");
             derivation
                 .set_interpreter(from_directives)
                 .context("could not set interpreter from file directives")?
+        } else {
+            log::trace!("not using an interpreter")
         };
 
         Ok(derivation)
@@ -113,6 +123,7 @@ fn main() {
     env_logger::Builder::from_env("NIX_SCRIPT_LOG").init();
 
     let opts = Opts::parse();
+    log::debug!("opts: {:?}", opts);
 
     if let Err(err) = opts.run() {
         eprintln!("{:?}", err);
