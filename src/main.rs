@@ -120,6 +120,9 @@ impl Opts {
         std::fs::write(cache_directory.join("default.nix"), derivation.to_string())
             .context("could not write default.nix")?;
         // TODO: run `nix-build` and get the store path
+        if self.root.is_none() {
+            std::fs::remove_dir_all(target).context("could not remove the temporary build root")?;
+        }
 
         // TODO: run the executable with the given args
 
