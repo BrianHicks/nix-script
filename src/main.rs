@@ -116,12 +116,13 @@ impl Opts {
         }
 
         // TODO: figure out which `default.nix` we want
+        // TODO: default.nix here should be a temporary file, probably
+        std::fs::write(cache_directory.join("default.nix"), derivation.to_string())
+            .context("could not write default.nix")?;
         // TODO: run `nix-build` and get the store path
 
         // TODO: run the executable with the given args
 
-        std::fs::write(cache_directory.join("default.nix"), derivation.to_string())
-            .context("could not write default.nix")?;
         Ok(())
     }
 
