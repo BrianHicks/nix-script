@@ -156,6 +156,7 @@ impl Opts {
         };
 
         if !target.exists() {
+            log::trace!("creating cache directory");
             std::fs::create_dir_all(&target).context("could not create cache directory")?;
         }
 
