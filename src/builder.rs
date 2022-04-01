@@ -13,6 +13,10 @@ pub struct Builder {
     source: Source,
 }
 
+lazy_static::lazy_static! {
+    static ref CURRENT: PathBuf = PathBuf::from("./.");
+}
+
 impl Builder {
     pub fn from_script(script: &Path) -> Self {
         log::trace!("constructing Source from script");
@@ -57,16 +61,22 @@ impl Builder {
         Directives::parse(indicator, &source).context("could not construct a directive parser")
     }
 
-    pub fn derivation(&self, directives: &Directives) -> Result<Derivation> {
+    pub fn derivation(&self, directives: &Directives, for_export: bool) -> Result<Derivation> {
         let build_command = match &directives.build_command {
             Some(bc) => bc,
             None => anyhow::bail!("Need a build command, either by specifying a `build` directive or passing the `--build` option.")
         };
 
-        let mut derivation = Derivation::new(
+        let root = if for_export {
+            &*CURRENT
+        } else {
             self.source
                 .root()
-                .context("could not get the root directory for the derivation")?,
+                .context("could not get the root directory for the derivation")?
+        };
+
+        let mut derivation = Derivation::new(
+            &root,
             self.source
                 .script()
                 .context("could not get the script name for the derivation")?,
@@ -107,7 +117,7 @@ impl Builder {
 
         if write_default_nix {
             let derivation = self
-                .derivation(directives)
+                .derivation(directives, false)
                 .context("could not prepare derivation to build")?;
 
             log::debug!("writing derivation to {}", build_path.display());
