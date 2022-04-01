@@ -1,8 +1,10 @@
+mod builder;
 mod clean_path;
 mod derivation;
 mod directives;
 mod expr;
 
+use crate::builder::Builder;
 use crate::derivation::Derivation;
 use crate::directives::Directives;
 use anyhow::{Context, Result};
@@ -65,6 +67,22 @@ impl Opts {
             .context("could not parse script and args")?;
         script = clean_path(&script).context("could not clean path to script")?;
 
+        let cache_directory = self
+            .get_cache_directory()
+            .context("couldn't get cache directory")?;
+        log::debug!(
+            "using `{}` as the cache directory",
+            cache_directory.display()
+        );
+
+        let builder = if let Some(root) = &self.root {
+            Builder::from_directory(root, &script)
+                .context("could not initialize source in directory")?
+        } else {
+            Builder::from_script(&script, &cache_directory)
+                .context("could not initialize source in file")?
+        };
+
         let source = fs::read_to_string(&script).context("could not read script")?;
 
         let directives = Directives::parse(&self.indicator, &source)
@@ -91,13 +109,6 @@ impl Opts {
 
         // TODO: create hash, check cache. If we've got a hit, proceed to the
         // last TODO in here.
-        let cache_directory = self
-            .get_cache_directory()
-            .context("couldn't get cache directory")?;
-        log::debug!(
-            "using `{}` as the cache directory",
-            cache_directory.display()
-        );
 
         // TODO: this goes in the big `if` eventually
         let (root, target) = self
