@@ -84,7 +84,7 @@ impl Opts {
                 .context("could not initialize source in file")?
         };
 
-        // Get our directives all sorted out (meaning: combined from various sources)
+        // Get our directives all combined from various sources
         let mut directives = builder
             .directives(&self.indicator)
             .context("could not parse directives from script")?;
