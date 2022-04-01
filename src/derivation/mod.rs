@@ -26,6 +26,12 @@ pub struct Derivation {
 
 impl Derivation {
     pub fn new(root: &Path, src: &Path, build_command: &str) -> Result<Self> {
+        log::trace!(
+            "creating a new derivation with root of {} and src of {}",
+            root.display(),
+            src.display()
+        );
+
         Ok(Self {
             inputs: Inputs::from(vec![("pkgs".into(), Some("import <nixpkgs> { }".into()))]),
             name: src
