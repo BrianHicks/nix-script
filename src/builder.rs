@@ -38,7 +38,11 @@ impl Builder {
         );
 
         Ok(Self {
-            source: Source::Directory { root, script },
+            source: Source::Directory {
+                root,
+                script,
+                tempdir: OnceCell::new(),
+            },
         })
     }
 
@@ -121,6 +125,9 @@ enum Source {
     Directory {
         root: PathBuf,
         script: PathBuf,
+
+        // only created if we need a place to put `default.nix`
+        tempdir: OnceCell<PathBuf>,
     },
 }
 
@@ -130,7 +137,7 @@ impl Source {
         match self {
             Self::Script { script, .. } => fs::read_to_string(&script)
                 .with_context(|| format!("could not read {}", script.display())),
-            Self::Directory { root, script } => fs::read_to_string(root.join(script))
+            Self::Directory { root, script, .. } => fs::read_to_string(root.join(script))
                 .with_context(|| format!("could not read {}", script.display())),
         }
     }
@@ -191,7 +198,15 @@ impl Source {
                 tempdir.get()
                     .context("I'm trying to build a script but have not created a temporary directory. This is an internal error and you should report it!")
                     .map(|temp| (temp, true)),
-            _ => todo!(),
+            Self::Directory { root, tempdir, .. } => if root.join("default.nix").exists() {
+                Ok((root, false))
+            } else {
+                let target = tempdir
+                    .get_or_try_init(|| Self::make_temporary_directory(cache_root))
+                    .context("could not create a place to write default.nix away from the source root")?;
+
+                Ok((target, true))
+            },
         }
     }
 
@@ -206,20 +221,20 @@ impl Source {
 
 impl Drop for Source {
     fn drop(&mut self) {
-        match self {
-            Self::Script { tempdir, .. } => {
-                if let Some(created) = tempdir.get() {
-                    log::trace!("attempting to remove temporary directory");
-                    if let Err(err) = fs::remove_dir_all(&created) {
-                        log::warn!(
-                            "Got an error while removing the temporary directory at {}: {}",
-                            created.display(),
-                            err
-                        )
-                    }
-                }
+        let tempdir = match self {
+            Self::Script { tempdir, .. } => tempdir,
+            Self::Directory { tempdir, .. } => tempdir,
+        };
+
+        if let Some(created) = tempdir.get() {
+            log::trace!("attempting to remove temporary directory");
+            if let Err(err) = fs::remove_dir_all(&created) {
+                log::warn!(
+                    "Got an error while removing the temporary directory at {}: {}",
+                    created.display(),
+                    err
+                )
             }
-            Self::Directory { .. } => {}
         }
     }
 }
