@@ -56,7 +56,9 @@ impl Builder {
             self.source
                 .root()
                 .context("could not get the root directory for the derivation")?,
-            self.source.script(),
+            self.source
+                .script()
+                .context("could not get the script name for the derivation")?,
             build_command,
         )
         .context("could not create a Nix derivation")?;
@@ -145,10 +147,15 @@ impl Source {
         }
     }
 
-    fn script(&self) -> &Path {
+    fn script(&self) -> Result<&Path> {
         match self {
-            Self::Script { script, .. } => script,
-            Self::Directory { script, .. } => script,
+            Self::Script { script, .. } => script
+                .file_name()
+                .with_context(|| {
+                    format!("script path ({}) did not have a filename", script.display())
+                })
+                .map(|p| p.as_ref()),
+            Self::Directory { script, .. } => Ok(script),
         }
     }
 
