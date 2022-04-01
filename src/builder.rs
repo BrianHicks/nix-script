@@ -183,7 +183,7 @@ impl Drop for Source {
             ..
         } = self
         {
-            log::trace!("attempting to remove {}", tempdir.display());
+            log::trace!("attempting to remove temporary directory");
             if let Err(err) = fs::remove_dir_all(&tempdir) {
                 log::warn!(
                     "Got an error while removing the temporary directory at {}: {}",
