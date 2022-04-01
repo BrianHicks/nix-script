@@ -153,7 +153,7 @@ impl Source {
                 *tempdir = Some(target.to_owned());
 
                 log::trace!(
-                    "isolating build script into temporary build directory at {}",
+                    "copying build script into temporary build directory at {}",
                     target.display()
                 );
 
