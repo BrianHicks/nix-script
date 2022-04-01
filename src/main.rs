@@ -105,7 +105,7 @@ impl Opts {
             println!(
                 "{}",
                 builder
-                    .derivation(&directives)
+                    .derivation(&directives, true)
                     .context("could not create a Nix derivation from the script")?
             );
             return Ok(());
