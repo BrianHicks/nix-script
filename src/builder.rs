@@ -6,7 +6,7 @@ use once_cell::unsync::OnceCell;
 use path_absolutize::Absolutize;
 use std::fs;
 use std::path::{Path, PathBuf};
-use std::process::Command;
+use std::process::{Command, Stdio};
 
 #[derive(Debug)]
 pub struct Builder {
@@ -119,6 +119,8 @@ impl Builder {
         let mut output = Command::new("nix-build")
             .arg(build_path)
             .arg("--no-out-link") // TODO: it might be good to explicitly set `--out-link` to somewhere in the cache!
+            .stdout(Stdio::piped())
+            .stderr(Stdio::inherit())
             .output()
             .context("failed to build")?;
 
