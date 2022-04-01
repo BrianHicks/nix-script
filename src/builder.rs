@@ -83,7 +83,7 @@ impl Builder {
         if let Some(interpreter) = &directives.interpreter {
             log::debug!("using interpreter from directives");
             derivation
-                .set_interpreter(&interpreter)
+                .set_interpreter(interpreter)
                 .context("could not set interpreter from file directives")?
         } else {
             log::trace!("not using an interpreter")
@@ -174,7 +174,7 @@ impl Source {
 
     fn root(&self) -> Result<&Path> {
         match self {
-            Self::Script { tempdir, .. } => Ok(&tempdir
+            Self::Script { tempdir, .. } => Ok(tempdir
                 .get()
                 .context("the temporary directory has not been created yet")?),
             Self::Directory {
