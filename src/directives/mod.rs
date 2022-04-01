@@ -68,4 +68,16 @@ impl Directives {
             runtime_inputs,
         })
     }
+
+    pub fn maybe_override_build_command(&mut self, maybe_new: &Option<String>) {
+        if maybe_new.is_some() {
+            self.build_command = maybe_new.to_owned()
+        }
+    }
+
+    pub fn maybe_override_interpreter(&mut self, maybe_new: &Option<String>) {
+        if maybe_new.is_some() {
+            self.interpreter = maybe_new.to_owned()
+        }
+    }
 }
