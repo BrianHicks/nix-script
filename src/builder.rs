@@ -1,4 +1,5 @@
 use crate::clean_path::clean_path;
+use crate::derivation::Derivation;
 use crate::directives::Directives;
 use anyhow::{Context, Result};
 use std::fs;
@@ -62,6 +63,34 @@ impl Builder {
         let source = self.source.read()?;
         Directives::parse(indicator, &source).context("could not construct a directive parser")
     }
+
+    pub fn derivation(&self, directives: &Directives) -> Result<Derivation> {
+        let build_command = match &directives.build_command {
+            Some(bc) => bc,
+            None => anyhow::bail!("Need a build command, either by specifying a `build` directive or passing the `--build` option.")
+        };
+
+        let mut derivation =
+            Derivation::new(self.source.root(), self.source.script(), build_command)
+                .context("could not create a Nix derivation")?;
+
+        log::trace!("adding build inputs");
+        derivation.add_build_inputs(directives.build_inputs.clone());
+
+        log::trace!("adding runtime inputs");
+        derivation.add_runtime_inputs(directives.runtime_inputs.clone());
+
+        if let Some(interpreter) = &directives.interpreter {
+            log::debug!("using interpreter from directives");
+            derivation
+                .set_interpreter(&interpreter)
+                .context("could not set interpreter from file directives")?
+        } else {
+            log::trace!("not using an interpreter")
+        };
+
+        Ok(derivation)
+    }
 }
 
 enum Source {
@@ -77,6 +106,20 @@ impl Source {
                 .with_context(|| format!("could not read {}", script.display())),
             Self::Directory { root, script } => fs::read_to_string(root.join(script))
                 .with_context(|| format!("could not read {}", script.display())),
+        }
+    }
+
+    fn root(&self) -> &Path {
+        match self {
+            Self::Script { tempdir, .. } => tempdir,
+            Self::Directory { root, .. } => root,
+        }
+    }
+
+    fn script(&self) -> &Path {
+        match self {
+            Self::Script { script, .. } => script,
+            Self::Directory { script, .. } => script,
         }
     }
 }
