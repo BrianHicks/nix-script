@@ -168,6 +168,9 @@ impl Source {
 
                 Ok(())
             }
+
+            // We don't need to do anything to isolate if we're working with
+            // a directory since we build in place.
             Self::Directory { .. } => Ok(()),
         }
     }
