@@ -83,9 +83,13 @@ impl Opts {
                 .context("could not initialize source in file")?
         };
 
-        let directives = builder
+        // Get our directives all sorted out (meaning: combined from various sources)
+        let mut directives = builder
             .directives(&self.indicator)
             .context("could not parse directives from script")?;
+
+        directives.maybe_override_build_command(&self.build_command);
+        directives.maybe_override_interpreter(&self.interpreter);
 
         // First place we might bail early: if a script just wants to parse
         // directives using our parser, we dump JSON and quit instead of running.
