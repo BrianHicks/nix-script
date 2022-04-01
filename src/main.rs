@@ -10,7 +10,6 @@ use crate::directives::Directives;
 use anyhow::{Context, Result};
 use clap::Parser;
 use clean_path::clean_path;
-use std::fs;
 use std::path::{Path, PathBuf};
 
 // TODO: options for the rest of the directives
