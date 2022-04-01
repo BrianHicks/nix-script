@@ -252,11 +252,18 @@ impl Source {
     }
 
     fn make_temporary_directory(cache_root: &Path) -> Result<PathBuf> {
-        Ok(tempfile::Builder::new()
+        let base = tempfile::Builder::new()
             .prefix("nix-script-")
             .tempdir_in(cache_root)
             .context("could not create temporary directory")?
-            .into_path())
+            .into_path();
+
+        // the immediately-containing directory name factors into Nix's store
+        // calculation, so we set it to something consistent.
+        let out = base.join("nix-script-src");
+        fs::create_dir(&out).context("could not make nix-script-src inside temporary directory")?;
+
+        Ok(out)
     }
 }
 
