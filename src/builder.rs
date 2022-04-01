@@ -3,6 +3,8 @@ use crate::derivation::Derivation;
 use crate::directives::Directives;
 use anyhow::{Context, Result};
 use once_cell::unsync::OnceCell;
+use path_absolutize::Absolutize;
+use std::borrow::Borrow;
 use std::fs;
 use std::path::{Path, PathBuf};
 
@@ -39,8 +41,12 @@ impl Builder {
 
         Ok(Self {
             source: Source::Directory {
-                root,
                 script,
+                absolute_root: root
+                    .absolutize()
+                    .context("could not find absolute path to root")?
+                    .to_path_buf(),
+                root,
                 tempdir: OnceCell::new(),
             },
         })
@@ -123,8 +129,10 @@ enum Source {
         script: PathBuf,
     },
     Directory {
-        root: PathBuf,
         script: PathBuf,
+
+        root: PathBuf,
+        absolute_root: PathBuf,
 
         // only created if we need a place to put `default.nix`
         tempdir: OnceCell<PathBuf>,
@@ -142,12 +150,23 @@ impl Source {
         }
     }
 
-    fn root(&self) -> Result<&PathBuf> {
+    fn root(&self) -> Result<&Path> {
         match self {
-            Self::Script { tempdir, .. } => tempdir
+            Self::Script { tempdir, .. } => Ok(&tempdir
                 .get()
-                .context("the temporary directory has not been created yet"),
-            Self::Directory { root, .. } => Ok(root),
+                .context("the temporary directory has not been created yet")?),
+            Self::Directory {
+                tempdir,
+                root,
+                absolute_root,
+                ..
+            } => {
+                if tempdir.get().is_some() {
+                    Ok(absolute_root)
+                } else {
+                    Ok(root)
+                }
+            }
         }
     }
 
