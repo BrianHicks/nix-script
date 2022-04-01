@@ -4,9 +4,9 @@ use crate::directives::Directives;
 use anyhow::{Context, Result};
 use once_cell::unsync::OnceCell;
 use path_absolutize::Absolutize;
-use std::borrow::Borrow;
 use std::fs;
 use std::path::{Path, PathBuf};
+use std::process::Command;
 
 #[derive(Debug)]
 pub struct Builder {
@@ -115,10 +115,32 @@ impl Builder {
                 .context("could not write derivation contents")?;
         }
 
-        // TODO: trigger build
         log::info!("building in {}", build_path.display());
+        let mut output = Command::new("nix-build")
+            .arg(build_path)
+            .arg("--no-out-link") // TODO: it might be good to explicitly set `--out-link` to somewhere in the cache!
+            .output()
+            .context("failed to build")?;
 
-        anyhow::bail!("todo")
+        match output.status.code() {
+            Some(0) => {}
+            Some(other) => anyhow::bail!("nix-build exited with code {}", other),
+            None => anyhow::bail!("nix-build was terminated by a signal"),
+        }
+
+        // trim newline from the end of the output
+        match output.stdout.pop() {
+            Some(0x0A) => {}
+            Some(other) => {
+                log::debug!("stdout: {:x?} ending in {:x}", output.stdout, other);
+                anyhow::bail!("stdout didn't end in a single newline, but {:x}", other)
+            }
+            None => anyhow::bail!("nix-build's stdout was empty. Was there an error building?"),
+        };
+
+        Ok(PathBuf::from(std::str::from_utf8(&output.stdout).context(
+            "could not convert nix-build's path output to a string",
+        )?))
     }
 }
 
