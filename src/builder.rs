@@ -254,6 +254,8 @@ impl Source {
     }
 
     fn make_temporary_directory(cache_root: &Path) -> Result<PathBuf> {
+        log::trace!("creating temporary directory");
+
         let base = tempfile::Builder::new()
             .prefix("nix-script-")
             .tempdir_in(cache_root)
