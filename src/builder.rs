@@ -87,7 +87,23 @@ impl Builder {
             .context("could not isolate source in order to build")?;
         // TODO: make sure `default.nix` is in the right place
 
+        let (build_path, write_default_nix) = self
+            .source
+            .derivation_path(cache_root)
+            .context("could not determine where to run the build")?;
+
+        if write_default_nix {
+            let derivation = self
+                .derivation(directives)
+                .context("could not prepare derivation to build")?;
+
+            log::debug!("writing derivation to {}", build_path.display());
+            fs::write(build_path.join("default.nix"), derivation.to_string())
+                .context("could not write derivation contents")?;
+        }
+
         // TODO: trigger build
+        log::info!("building in {}", build_path.display());
 
         anyhow::bail!("todo")
     }
@@ -140,11 +156,7 @@ impl Source {
         match self {
             Self::Script { script, tempdir } => {
                 // TODO: clean this dir up in `Drop`
-                let target = tempfile::Builder::new()
-                    .prefix("nix-script-")
-                    .tempdir_in(cache_root)
-                    .context("could not create temporary directory for build")?
-                    .into_path();
+                let target = Self::make_temporary_directory(cache_root)?;
 
                 // TODO: how could we get this working so that we get:
                 //
@@ -173,6 +185,22 @@ impl Source {
             // a directory since we build in place.
             Self::Directory { .. } => Ok(()),
         }
+    }
+
+    fn derivation_path(&self, cache_root: &Path) -> Result<(&Path, bool)> {
+        match self {
+            Self::Script { tempdir: Some(tempdir), .. } => Ok((tempdir, true)),
+            Self::Script { tempdir: None, .. } => anyhow::bail!("I'm trying to build a script but have not created a temporary directory. This is an internal error and you should report it!"),
+            _ => todo!(),
+        }
+    }
+
+    fn make_temporary_directory(cache_root: &Path) -> Result<PathBuf> {
+        Ok(tempfile::Builder::new()
+            .prefix("nix-script-")
+            .tempdir_in(cache_root)
+            .context("could not create temporary directory")?
+            .into_path())
     }
 }
 
