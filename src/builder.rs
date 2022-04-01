@@ -1,14 +1,11 @@
 use crate::clean_path::clean_path;
+use crate::directives::Directives;
 use anyhow::{Context, Result};
+use std::fs;
 use std::path::{Path, PathBuf};
 
 pub struct Builder {
     source: Source,
-}
-
-enum Source {
-    Script { tempdir: PathBuf, script: PathBuf },
-    Directory { root: PathBuf, script: PathBuf },
 }
 
 impl Builder {
@@ -31,7 +28,7 @@ impl Builder {
                 .context("the script path did not have a file name")?,
         );
 
-        std::fs::copy(script, &script_dest)
+        fs::copy(script, &script_dest)
             .context("could not copy source to temporary build directory")?;
 
         Ok(Self {
@@ -59,5 +56,26 @@ impl Builder {
         Ok(Self {
             source: Source::Directory { root, script },
         })
+    }
+
+    pub fn directives(&self, indicator: &str) -> Result<Directives> {
+        let source = self.source.read()?;
+        Directives::parse(indicator, &source).context("could not construct a directive parser")
+    }
+}
+
+enum Source {
+    Script { tempdir: PathBuf, script: PathBuf },
+    Directory { root: PathBuf, script: PathBuf },
+}
+
+impl Source {
+    fn read(&self) -> Result<String> {
+        match self {
+            Self::Script { script, .. } => fs::read_to_string(&script)
+                .with_context(|| format!("could not read {}", script.display())),
+            Self::Directory { root, script } => fs::read_to_string(root.join(script))
+                .with_context(|| format!("could not read {}", script.display())),
+        }
     }
 }

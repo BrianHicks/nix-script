@@ -83,10 +83,9 @@ impl Opts {
                 .context("could not initialize source in file")?
         };
 
-        let source = fs::read_to_string(&script).context("could not read script")?;
-
-        let directives = Directives::parse(&self.indicator, &source)
-            .context("could not construct a directive parser")?;
+        let directives = builder
+            .directives(&self.indicator)
+            .context("could not parse directives from script")?;
 
         // First place we might bail early: if a script just wants to parse
         // directives using our parser, we dump JSON and quit instead of running.
