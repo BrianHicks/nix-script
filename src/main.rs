@@ -101,13 +101,25 @@ impl Opts {
             return Ok(());
         }
 
-        // We check here instead of inside isolate_script or similar so we
-        // can get an early bail that doesn't create trash in the system's
-        // temporary directories.
-        if self.export && self.root.is_none() {
-            anyhow::bail!(
-                "I don't have a root to refer to while exporting, so I can't isolate the script and dependencies. Specify a --root and try this again!"
-            )
+        // Second place we can bail early: if someone wants the generated
+        // derivation to do IFD or similar
+        if self.export {
+            // We check here instead of inside while isolating the script or
+            // similar so we can get an early bail that doesn't create trash
+            // in the system's temporary directories.
+            if self.root.is_none() {
+                anyhow::bail!(
+                    "I don't have a root to refer to while exporting, so I can't isolate the script and dependencies. Specify a --root and try this again!"
+                )
+            }
+
+            println!(
+                "{}",
+                builder
+                    .derivation(&directives)
+                    .context("could not build derivation")?
+            );
+            return Ok(());
         }
 
         // TODO: create hash, check cache. If we've got a hit, proceed to the
@@ -117,17 +129,6 @@ impl Opts {
         let (root, target) = self
             .isolate_script(&script)
             .context("could not get an isolated build root for script")?;
-
-        let derivation = self
-            .derivation(&root, &target, directives)
-            .context("could not generate derivation")?;
-
-        // Second place we can bail early: if someone wants the generated
-        // derivation to do IFD or similar
-        if self.export {
-            println!("{}", derivation);
-            return Ok(());
-        }
 
         // TODO: figure out which `default.nix` we want
         // TODO: default.nix here should be a temporary file, probably
@@ -183,43 +184,6 @@ impl Opts {
 
             Ok((tempdir, target_name.into()))
         }
-    }
-
-    fn derivation(&self, root: &Path, script: &Path, directives: Directives) -> Result<Derivation> {
-        let build_command = if let Some(from_opts) = &self.build_command {
-            log::debug!("using build command from opts");
-            from_opts
-        } else if let Some(from_directives) = &directives.build_command {
-            log::debug!("using build command from directives");
-            from_directives
-        } else {
-            anyhow::bail!("Need a build command, either by specifying a `build` directive or passing the `--build` option.")
-        };
-
-        let mut derivation = Derivation::new(root, script, build_command)
-            .context("could not create a Nix derivation")?;
-
-        log::trace!("adding build inputs");
-        derivation.add_build_inputs(directives.build_inputs);
-
-        log::trace!("adding runtime inputs");
-        derivation.add_runtime_inputs(directives.runtime_inputs);
-
-        if let Some(from_opts) = &self.interpreter {
-            log::debug!("using interpreter from opts");
-            derivation
-                .set_interpreter(from_opts)
-                .context("could not set interpreter from command-line flags")?
-        } else if let Some(from_directives) = directives.interpreter {
-            log::debug!("using interpreter from directives");
-            derivation
-                .set_interpreter(&from_directives)
-                .context("could not set interpreter from file directives")?
-        } else {
-            log::trace!("not using an interpreter")
-        };
-
-        Ok(derivation)
     }
 
     fn get_cache_directory(&self) -> Result<PathBuf> {
