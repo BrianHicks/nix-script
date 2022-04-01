@@ -76,7 +76,7 @@ impl Builder {
         };
 
         let mut derivation = Derivation::new(
-            &root,
+            root,
             self.source
                 .script()
                 .context("could not get the script name for the derivation")?,
