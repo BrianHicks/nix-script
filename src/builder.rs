@@ -71,6 +71,7 @@ enum Source {
 
 impl Source {
     fn read(&self) -> Result<String> {
+        log::trace!("reading script source");
         match self {
             Self::Script { script, .. } => fs::read_to_string(&script)
                 .with_context(|| format!("could not read {}", script.display())),
