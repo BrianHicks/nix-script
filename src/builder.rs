@@ -2,6 +2,7 @@ use crate::clean_path::clean_path;
 use crate::derivation::Derivation;
 use crate::directives::Directives;
 use anyhow::{Context, Result};
+use once_cell::unsync::OnceCell;
 use std::fs;
 use std::path::{Path, PathBuf};
 
@@ -17,7 +18,7 @@ impl Builder {
         Self {
             source: Source::Script {
                 script: script.to_owned(),
-                tempdir: None,
+                tempdir: OnceCell::new(),
             },
         }
     }
@@ -114,7 +115,7 @@ impl Builder {
 #[derive(Debug)]
 enum Source {
     Script {
-        tempdir: Option<PathBuf>,
+        tempdir: OnceCell<PathBuf>,
         script: PathBuf,
     },
     Directory {
@@ -134,15 +135,11 @@ impl Source {
         }
     }
 
-    fn root(&self) -> Result<&Path> {
+    fn root(&self) -> Result<&PathBuf> {
         match self {
-            Self::Script { tempdir: None, .. } => {
-                anyhow::bail!("the temporary directory has not been created yet")
-            }
-            Self::Script {
-                tempdir: Some(tempdir),
-                ..
-            } => Ok(tempdir),
+            Self::Script { tempdir, .. } => tempdir
+                .get()
+                .context("the temporary directory has not been created yet"),
             Self::Directory { root, .. } => Ok(root),
         }
     }
@@ -162,14 +159,8 @@ impl Source {
     fn isolate(&mut self, cache_root: &Path) -> Result<()> {
         match self {
             Self::Script { script, tempdir } => {
-                // TODO: clean this dir up in `Drop`
-                let target = Self::make_temporary_directory(cache_root)?;
-
-                // TODO: how could we get this working so that we get:
-                //
-                // - cleanup still happening if the copy step fails
-                // - not having to copy this value?
-                *tempdir = Some(target.to_owned());
+                let target =
+                    tempdir.get_or_try_init(|| Self::make_temporary_directory(cache_root))?;
 
                 log::trace!(
                     "copying build script into temporary build directory at {}",
@@ -194,10 +185,12 @@ impl Source {
         }
     }
 
-    fn derivation_path(&self, cache_root: &Path) -> Result<(&Path, bool)> {
+    fn derivation_path(&self, cache_root: &Path) -> Result<(&PathBuf, bool)> {
         match self {
-            Self::Script { tempdir: Some(tempdir), .. } => Ok((tempdir, true)),
-            Self::Script { tempdir: None, .. } => anyhow::bail!("I'm trying to build a script but have not created a temporary directory. This is an internal error and you should report it!"),
+            Self::Script { tempdir, .. } =>
+                tempdir.get()
+                    .context("I'm trying to build a script but have not created a temporary directory. This is an internal error and you should report it!")
+                    .map(|temp| (temp, true)),
             _ => todo!(),
         }
     }
@@ -213,19 +206,20 @@ impl Source {
 
 impl Drop for Source {
     fn drop(&mut self) {
-        if let Self::Script {
-            tempdir: Some(tempdir),
-            ..
-        } = self
-        {
-            log::trace!("attempting to remove temporary directory");
-            if let Err(err) = fs::remove_dir_all(&tempdir) {
-                log::warn!(
-                    "Got an error while removing the temporary directory at {}: {}",
-                    tempdir.display(),
-                    err
-                )
+        match self {
+            Self::Script { tempdir, .. } => {
+                if let Some(created) = tempdir.get() {
+                    log::trace!("attempting to remove temporary directory");
+                    if let Err(err) = fs::remove_dir_all(&created) {
+                        log::warn!(
+                            "Got an error while removing the temporary directory at {}: {}",
+                            created.display(),
+                            err
+                        )
+                    }
+                }
             }
+            Self::Directory { .. } => {}
         }
     }
 }
