@@ -13,6 +13,7 @@ use clean_path::clean_path;
 use std::fs;
 use std::path::{Path, PathBuf};
 
+// TODO: options for the rest of the directives
 #[derive(Debug, Parser)]
 #[clap(version, trailing_var_arg = true)]
 struct Opts {
