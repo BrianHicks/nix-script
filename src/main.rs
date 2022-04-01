@@ -5,12 +5,10 @@ mod directives;
 mod expr;
 
 use crate::builder::Builder;
-use crate::derivation::Derivation;
-use crate::directives::Directives;
 use anyhow::{Context, Result};
 use clap::Parser;
 use clean_path::clean_path;
-use std::path::{Path, PathBuf};
+use std::path::PathBuf;
 
 // TODO: options for the rest of the directives
 #[derive(Debug, Parser)]
@@ -67,20 +65,11 @@ impl Opts {
             .context("could not parse script and args")?;
         script = clean_path(&script).context("could not clean path to script")?;
 
-        let cache_directory = self
-            .get_cache_directory()
-            .context("couldn't get cache directory")?;
-        log::debug!(
-            "using `{}` as the cache directory",
-            cache_directory.display()
-        );
-
-        let builder = if let Some(root) = &self.root {
+        let mut builder = if let Some(root) = &self.root {
             Builder::from_directory(root, &script)
                 .context("could not initialize source in directory")?
         } else {
-            Builder::from_script(&script, &cache_directory)
-                .context("could not initialize source in file")?
+            Builder::from_script(&script)
         };
 
         // Get our directives all combined from various sources
@@ -117,27 +106,28 @@ impl Opts {
                 "{}",
                 builder
                     .derivation(&directives)
-                    .context("could not build derivation")?
+                    .context("could not create a Nix derivation from the script")?
             );
             return Ok(());
         }
 
+        let cache_directory = self
+            .get_cache_directory()
+            .context("couldn't get cache directory")?;
+        log::debug!(
+            "using `{}` as the cache directory",
+            cache_directory.display()
+        );
+
         // TODO: create hash, check cache. If we've got a hit, proceed to the
         // last TODO in here.
 
-        // TODO: this goes in the big `if` eventually
-        let (root, target) = self
-            .isolate_script(&script)
-            .context("could not get an isolated build root for script")?;
+        let out_path = builder
+            .build(&cache_directory, &directives)
+            .context("could not build derivation from script")?;
+        println!("{}", out_path.display());
 
-        // TODO: figure out which `default.nix` we want
-        // TODO: default.nix here should be a temporary file, probably
-        std::fs::write(cache_directory.join("default.nix"), derivation.to_string())
-            .context("could not write default.nix")?;
-        // TODO: run `nix-build` and get the store path
-        if self.root.is_none() {
-            std::fs::remove_dir_all(target).context("could not remove the temporary build root")?;
-        }
+        // TODO: store in the cache
 
         // TODO: run the executable with the given args
 
@@ -151,39 +141,6 @@ impl Opts {
         let script = PathBuf::from(script_and_args.next().context("I need at least a script name to run, but didn't get one. Please pass that as the first positional argument and try again!")?);
 
         Ok((script, self.script_and_args[1..].to_vec()))
-    }
-
-    fn isolate_script(&self, script: &Path) -> Result<(PathBuf, PathBuf)> {
-        if let Some(raw_root) = &self.root {
-            let root = clean_path(raw_root).context("could not clean path to root")?;
-
-            let from_root = script.strip_prefix(&root).context("could not find a path from the provided root to the script file (root must contain script)")?;
-            log::debug!(
-                "calculated script path from root `{}` as `{}`",
-                root.display(),
-                from_root.display()
-            );
-
-            Ok((root.to_owned(), from_root.to_owned()))
-        } else {
-            let target_name = script
-                .file_name()
-                .context("could not get file name from script name")?;
-
-            let tempdir = tempfile::Builder::new()
-                .prefix("nix-script-")
-                .tempdir_in(
-                    self.get_cache_directory()
-                        .context("could not get the cache directory")?,
-                )
-                .context("could not create temporary directory")?
-                .into_path();
-
-            std::fs::copy(script, tempdir.join(target_name))
-                .context("could not copy script to temporary directory")?;
-
-            Ok((tempdir, target_name.into()))
-        }
     }
 
     fn get_cache_directory(&self) -> Result<PathBuf> {

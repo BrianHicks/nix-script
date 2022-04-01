@@ -5,39 +5,21 @@ use anyhow::{Context, Result};
 use std::fs;
 use std::path::{Path, PathBuf};
 
+#[derive(Debug)]
 pub struct Builder {
     source: Source,
 }
 
 impl Builder {
-    pub fn from_script(script: &Path, cache_root: &Path) -> Result<Self> {
+    pub fn from_script(script: &Path) -> Self {
         log::trace!("constructing Source from script");
 
-        // TODO: don't isolate until we need to; we may just want to parse the
-        // directives or export a derivation
-
-        // TODO: clean this dir up in `Drop`
-        let tempdir = tempfile::Builder::new()
-            .prefix("nix-script-")
-            .tempdir_in(cache_root)
-            .context("could not create temporary directory for build")?
-            .into_path();
-
-        let script_dest = tempdir.join(
-            script
-                .file_name()
-                .context("the script path did not have a file name")?,
-        );
-
-        fs::copy(script, &script_dest)
-            .context("could not copy source to temporary build directory")?;
-
-        Ok(Self {
+        Self {
             source: Source::Script {
-                script: script_dest,
-                tempdir,
+                script: script.to_owned(),
+                tempdir: None,
             },
-        })
+        }
     }
 
     pub fn from_directory(raw_root: &Path, raw_script: &Path) -> Result<Self> {
@@ -70,9 +52,14 @@ impl Builder {
             None => anyhow::bail!("Need a build command, either by specifying a `build` directive or passing the `--build` option.")
         };
 
-        let mut derivation =
-            Derivation::new(self.source.root(), self.source.script(), build_command)
-                .context("could not create a Nix derivation")?;
+        let mut derivation = Derivation::new(
+            self.source
+                .root()
+                .context("could not get the root directory for the derivation")?,
+            self.source.script(),
+            build_command,
+        )
+        .context("could not create a Nix derivation")?;
 
         log::trace!("adding build inputs");
         derivation.add_build_inputs(directives.build_inputs.clone());
@@ -91,11 +78,31 @@ impl Builder {
 
         Ok(derivation)
     }
+
+    pub fn build(&mut self, cache_root: &Path, directives: &Directives) -> Result<PathBuf> {
+        log::trace!("building");
+
+        self.source
+            .isolate(cache_root)
+            .context("could not isolate source in order to build")?;
+        // TODO: make sure `default.nix` is in the right place
+
+        // TODO: trigger build
+
+        anyhow::bail!("todo")
+    }
 }
 
+#[derive(Debug)]
 enum Source {
-    Script { tempdir: PathBuf, script: PathBuf },
-    Directory { root: PathBuf, script: PathBuf },
+    Script {
+        tempdir: Option<PathBuf>,
+        script: PathBuf,
+    },
+    Directory {
+        root: PathBuf,
+        script: PathBuf,
+    },
 }
 
 impl Source {
@@ -109,10 +116,16 @@ impl Source {
         }
     }
 
-    fn root(&self) -> &Path {
+    fn root(&self) -> Result<&Path> {
         match self {
-            Self::Script { tempdir, .. } => tempdir,
-            Self::Directory { root, .. } => root,
+            Self::Script { tempdir: None, .. } => {
+                anyhow::bail!("the temporary directory has not been created yet")
+            }
+            Self::Script {
+                tempdir: Some(tempdir),
+                ..
+            } => Ok(tempdir),
+            Self::Directory { root, .. } => Ok(root),
         }
     }
 
@@ -120,6 +133,61 @@ impl Source {
         match self {
             Self::Script { script, .. } => script,
             Self::Directory { script, .. } => script,
+        }
+    }
+
+    fn isolate(&mut self, cache_root: &Path) -> Result<()> {
+        match self {
+            Self::Script { script, tempdir } => {
+                // TODO: clean this dir up in `Drop`
+                let target = tempfile::Builder::new()
+                    .prefix("nix-script-")
+                    .tempdir_in(cache_root)
+                    .context("could not create temporary directory for build")?
+                    .into_path();
+
+                // TODO: how could we get this working so that we get:
+                //
+                // - cleanup still happening if the copy step fails
+                // - not having to copy this value?
+                *tempdir = Some(target.to_owned());
+
+                log::trace!(
+                    "isolating build script into temporary build directory at {}",
+                    target.display()
+                );
+
+                let script_dest = target.join(
+                    script
+                        .file_name()
+                        .context("the script path did not have a file name")?,
+                );
+
+                fs::copy(script, &script_dest)
+                    .context("could not copy source to temporary build directory")?;
+
+                Ok(())
+            }
+            Self::Directory { .. } => Ok(()),
+        }
+    }
+}
+
+impl Drop for Source {
+    fn drop(&mut self) {
+        if let Self::Script {
+            tempdir: Some(tempdir),
+            ..
+        } = self
+        {
+            log::trace!("attempting to remove {}", tempdir.display());
+            if let Err(err) = fs::remove_dir_all(&tempdir) {
+                log::warn!(
+                    "Got an error while removing the temporary directory at {}: {}",
+                    tempdir.display(),
+                    err
+                )
+            }
         }
     }
 }
