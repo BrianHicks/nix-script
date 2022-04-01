@@ -249,6 +249,7 @@ dependencies = [
  "lazy_static",
  "log",
  "once_cell",
+ "path-absolutize",
  "rnix",
  "serde",
  "serde_json",
@@ -277,6 +278,24 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "8e22443d1643a904602595ba1cd8f7d896afe56d26712531c5ff73a15b2fbf64"
 dependencies = [
  "memchr",
+]
+
+[[package]]
+name = "path-absolutize"
+version = "3.0.12"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "0a2a79d7c1c4eab523515c4561459b10516d6e7014aa76edc3ea05680d5c5d2d"
+dependencies = [
+ "path-dedot",
+]
+
+[[package]]
+name = "path-dedot"
+version = "3.0.16"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "f326e2a3331685a5e3d4633bb9836bd92126e08037cb512252f3612f616a0b28"
+dependencies = [
+ "once_cell",
 ]
 
 [[package]]
