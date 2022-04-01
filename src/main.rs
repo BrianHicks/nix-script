@@ -186,7 +186,7 @@ impl Opts {
         let build_command = if let Some(from_opts) = &self.build_command {
             log::debug!("using build command from opts");
             from_opts
-        } else if let Some(from_directives) = directives.build_command {
+        } else if let Some(from_directives) = &directives.build_command {
             log::debug!("using build command from directives");
             from_directives
         } else {
@@ -210,7 +210,7 @@ impl Opts {
         } else if let Some(from_directives) = directives.interpreter {
             log::debug!("using interpreter from directives");
             derivation
-                .set_interpreter(from_directives)
+                .set_interpreter(&from_directives)
                 .context("could not set interpreter from file directives")?
         } else {
             log::trace!("not using an interpreter")
