@@ -273,6 +273,10 @@ impl Source {
 
         // the immediately-containing directory name factors into Nix's store
         // calculation, so we set it to something consistent.
+        //
+        // TODO: doing things this way means that we're cleaning up the inner
+        // nix-script-src directory instead of the outer temporary directory. Do
+        // something about this.
         let out = base.join("nix-script-src");
         fs::create_dir(&out).context("could not make nix-script-src inside temporary directory")?;
 
