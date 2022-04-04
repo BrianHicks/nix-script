@@ -108,7 +108,6 @@ impl Builder {
         self.source
             .isolate(cache_root)
             .context("could not isolate source in order to build")?;
-        // TODO: make sure `default.nix` is in the right place
 
         let (build_path, write_default_nix) = self
             .source
