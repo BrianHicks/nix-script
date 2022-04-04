@@ -20,7 +20,7 @@ executable nix-script
   main-is:             Main.hs
   -- other-modules:
   -- other-extensions:
-  build-depends:       base >=4.13 && <4.15
+  build-depends:       base >= 4.13 && < 5.0
                      , base16-bytestring >= 0.1.1.7 && < 1.1
                      , cryptohash-sha256 ^>= 0.11.101.0
                      , data-fix >= 0.2.1 && < 0.4
