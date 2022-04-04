@@ -46,8 +46,8 @@ struct Opts {
     #[clap(long("cache-directory"), env("NIX_SCRIPT_CACHE"))]
     cache_directory: Option<PathBuf>,
 
-    /// The script to run, plus any arguments. Any positional arguments after
-    /// the script name will be passed on to the script.
+    /// The script to run (required), plus any arguments (optional). Any positional
+    /// arguments after the script name will be passed on to the script.
     // Note: it'd be better to have a "script" and "args" field separately,
     // but there's a parsing issue in Clap (not a bug, but maybe a bug?) that
     // prevents passing args starting in -- after the script if we do that. See
