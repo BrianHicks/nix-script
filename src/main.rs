@@ -52,7 +52,7 @@ struct Opts {
     // but there's a parsing issue in Clap (not a bug, but maybe a bug?) that
     // prevents passing args starting in -- after the script if we do that. See
     // https://github.com/clap-rs/clap/issues/1538
-    #[clap(min_values = 1)]
+    #[clap(min_values = 1, required = true)]
     script_and_args: Vec<String>,
 }
 
@@ -138,7 +138,7 @@ impl Opts {
         log::trace!("parsing script and args");
         let mut script_and_args = self.script_and_args.iter();
 
-        let script = PathBuf::from(script_and_args.next().context("I need at least a script name to run, but didn't get one. Please pass that as the first positional argument and try again!")?);
+        let script = PathBuf::from(script_and_args.next().context("I need at least a script name to run, but didn't get one. This represents an internal error, and you should open a bug!")?);
 
         Ok((script, self.script_and_args[1..].to_vec()))
     }
