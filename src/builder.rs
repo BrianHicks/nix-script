@@ -114,7 +114,7 @@ impl Builder {
             .derivation_path(cache_root)
             .context("could not determine where to run the build")?;
 
-        if self.source.needs_default_nix() {
+        if !self.source.has_default_nix() {
             let derivation = self
                 .derivation(directives, false)
                 .context("could not prepare derivation to build")?;
@@ -262,10 +262,10 @@ impl Source {
         }
     }
 
-    fn needs_default_nix(&self) -> bool {
+    fn has_default_nix(&self) -> bool {
         match self {
-            Self::Script { .. } => true,
-            Self::Directory { root, .. } => !root.join("default.nix").exists(),
+            Self::Script { .. } => false,
+            Self::Directory { root, .. } => root.join("default.nix").exists(),
         }
     }
 }
