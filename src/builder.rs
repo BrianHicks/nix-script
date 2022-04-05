@@ -185,10 +185,13 @@ impl Source {
 
     fn root(&self) -> Result<&Path> {
         match self {
-            Self::Script { tempdir, .. } => Ok(tempdir
+            Self::Script {
+                tempdir, script, ..
+            } => Ok(tempdir
                 .get()
-                .map(|tempdir| &tempdir.build)
-                .context("the temporary directory has not been created yet")?),
+                .map(|tempdir| tempdir.build.as_ref())
+                .or_else(|| script.parent())
+                .context("can't find a path to the root for this script. This is probably a bug and you should report it!")?),
             Self::Directory {
                 tempdir,
                 root,
