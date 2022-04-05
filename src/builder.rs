@@ -109,12 +109,12 @@ impl Builder {
             .isolate(cache_root)
             .context("could not isolate source in order to build")?;
 
-        let (build_path, write_default_nix) = self
+        let build_path = self
             .source
             .derivation_path(cache_root)
             .context("could not determine where to run the build")?;
 
-        if write_default_nix {
+        if self.source.needs_default_nix() {
             let derivation = self
                 .derivation(directives, false)
                 .context("could not prepare derivation to build")?;
@@ -244,21 +244,28 @@ impl Source {
         }
     }
 
-    fn derivation_path(&self, cache_root: &Path) -> Result<(&PathBuf, bool)> {
+    fn derivation_path(&self, cache_root: &Path) -> Result<&PathBuf> {
         match self {
             Self::Script { tempdir, .. } =>
                 tempdir.get()
                     .context("I'm trying to build a script but have not created a temporary directory. This is an internal error and you should report it!")
-                    .map(|temp| (&temp.build, true)),
+                    .map(|temp| &temp.build),
             Self::Directory { root, tempdir, .. } => if root.join("default.nix").exists() {
-                Ok((root, false))
+                Ok(root)
             } else {
                 let target = tempdir
                     .get_or_try_init(|| TempDir::new_in(cache_root))
                     .context("could not create a place to write default.nix away from the source root")?;
 
-                Ok((&target.build, true))
+                Ok(&target.build)
             },
+        }
+    }
+
+    fn needs_default_nix(&self) -> bool {
+        match self {
+            Self::Script { .. } => true,
+            Self::Directory { root, .. } => !root.join("default.nix").exists(),
         }
     }
 }
