@@ -119,6 +119,12 @@ impl Opts {
             cache_directory.display()
         );
 
+        let hash = builder
+            .hash(&directives)
+            .context("could not calculate cache location for the script's compiled version")?;
+
+        log::warn!("hash: {}", hash);
+
         // TODO: create hash, check cache. If we've got a hit, proceed to the
         // last TODO in here.
 
