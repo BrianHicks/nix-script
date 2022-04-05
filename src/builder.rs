@@ -158,7 +158,7 @@ impl Builder {
 #[derive(Debug)]
 enum Source {
     Script {
-        tempdir: OnceCell<PathBuf>,
+        tempdir: OnceCell<TempDir>,
         script: PathBuf,
     },
     Directory {
@@ -168,7 +168,7 @@ enum Source {
         absolute_root: PathBuf,
 
         // only created if we need a place to put `default.nix`
-        tempdir: OnceCell<PathBuf>,
+        tempdir: OnceCell<TempDir>,
     },
 }
 
@@ -187,6 +187,7 @@ impl Source {
         match self {
             Self::Script { tempdir, .. } => Ok(tempdir
                 .get()
+                .map(|tempdir| &tempdir.build)
                 .context("the temporary directory has not been created yet")?),
             Self::Directory {
                 tempdir,
@@ -218,15 +219,14 @@ impl Source {
     fn isolate(&mut self, cache_root: &Path) -> Result<()> {
         match self {
             Self::Script { script, tempdir } => {
-                let target =
-                    tempdir.get_or_try_init(|| Self::make_temporary_directory(cache_root))?;
+                let target = tempdir.get_or_try_init(|| TempDir::new_in(cache_root))?;
 
                 log::trace!(
                     "copying build script into temporary build directory at {}",
-                    target.display()
+                    target.build.display()
                 );
 
-                let script_dest = target.join(
+                let script_dest = target.build.join(
                     script
                         .file_name()
                         .context("the script path did not have a file name")?,
@@ -249,57 +249,62 @@ impl Source {
             Self::Script { tempdir, .. } =>
                 tempdir.get()
                     .context("I'm trying to build a script but have not created a temporary directory. This is an internal error and you should report it!")
-                    .map(|temp| (temp, true)),
+                    .map(|temp| (&temp.build, true)),
             Self::Directory { root, tempdir, .. } => if root.join("default.nix").exists() {
                 Ok((root, false))
             } else {
                 let target = tempdir
-                    .get_or_try_init(|| Self::make_temporary_directory(cache_root))
+                    .get_or_try_init(|| TempDir::new_in(cache_root))
                     .context("could not create a place to write default.nix away from the source root")?;
 
-                Ok((target, true))
+                Ok((&target.build, true))
             },
         }
     }
+}
 
-    fn make_temporary_directory(cache_root: &Path) -> Result<PathBuf> {
+/// When you run a build, Nix uses the directory name as part of the calculation
+/// for the final path in the store. That means that if we have random temporary
+/// directory names like `nix-script-a4beff` we'll bust the cache every time. We
+/// can get around this by building in a subdirectory of the temporary directory,
+/// but that makes it more difficult to keep track of the real root. This data
+/// structure solves that problem by explicitly tracking both and dropping the
+/// temporary directory when the owner goes out of scope.
+#[derive(Debug)]
+struct TempDir {
+    root: PathBuf,
+    build: PathBuf,
+}
+
+impl TempDir {
+    fn new_in(root: &Path) -> Result<Self> {
         log::trace!("creating temporary directory");
 
-        let base = tempfile::Builder::new()
+        let root = tempfile::Builder::new()
             .prefix("nix-script-")
-            .tempdir_in(cache_root)
+            .tempdir_in(root)
             .context("could not create temporary directory")?
             .into_path();
 
-        // the immediately-containing directory name factors into Nix's store
-        // calculation, so we set it to something consistent.
-        //
-        // TODO: doing things this way means that we're cleaning up the inner
-        // nix-script-src directory instead of the outer temporary directory. Do
-        // something about this.
-        let out = base.join("nix-script-src");
-        fs::create_dir(&out).context("could not make nix-script-src inside temporary directory")?;
+        let build = root.join("nix-script");
 
-        Ok(out)
+        fs::create_dir(&build)
+            .context("could not create build directory in temporary directory")?;
+
+        Ok(TempDir { root, build })
     }
 }
 
-impl Drop for Source {
+impl Drop for TempDir {
     fn drop(&mut self) {
-        let tempdir = match self {
-            Self::Script { tempdir, .. } => tempdir,
-            Self::Directory { tempdir, .. } => tempdir,
-        };
+        log::trace!("attempting to remove temporary directory");
 
-        if let Some(created) = tempdir.get() {
-            log::trace!("attempting to remove temporary directory");
-            if let Err(err) = fs::remove_dir_all(&created) {
-                log::warn!(
-                    "Got an error while removing the temporary directory at {}: {}",
-                    created.display(),
-                    err
-                )
-            }
+        if let Err(err) = fs::remove_dir_all(&self.root) {
+            log::warn!(
+                "Got an error while removing the temporary directory at {}: {}",
+                self.root.display(),
+                err
+            )
         }
     }
 }
