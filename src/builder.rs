@@ -4,7 +4,9 @@ use crate::directives::Directives;
 use anyhow::{Context, Result};
 use once_cell::unsync::OnceCell;
 use path_absolutize::Absolutize;
+use seahash::SeaHasher;
 use std::fs;
+use std::hash::Hasher;
 use std::path::{Path, PathBuf};
 use std::process::{Command, Stdio};
 
@@ -100,6 +102,22 @@ impl Builder {
         };
 
         Ok(derivation)
+    }
+
+    pub fn hash(&self, directives: &Directives) -> Result<String> {
+        let mut hasher = SeaHasher::new();
+
+        if !self.source.has_default_nix() {
+            log::trace!("including derivation in hash");
+
+            let derivation = self
+                .derivation(directives, false)
+                .context("could not generate derivation to include in hash")?;
+
+            hasher.write(derivation.to_string().as_ref());
+        }
+
+        Ok(format!("{:x}", hasher.finish()))
     }
 
     pub fn build(&mut self, cache_root: &Path, directives: &Directives) -> Result<PathBuf> {
