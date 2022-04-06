@@ -8,6 +8,8 @@ use crate::builder::Builder;
 use anyhow::{Context, Result};
 use clap::Parser;
 use clean_path::clean_path;
+use std::fs;
+use std::io::ErrorKind;
 use std::os::unix::fs::symlink;
 use std::os::unix::process::ExitStatusExt;
 use std::path::PathBuf;
@@ -143,7 +145,23 @@ impl Opts {
                 .build(&cache_directory, &directives)
                 .context("could not build derivation from script")?;
 
-            symlink(out_path, &target).context("could not create symlink in cache")?;
+            if let Err(err) = symlink(&out_path, &target) {
+                match err.kind() {
+                    ErrorKind::AlreadyExists => {
+                        let actual = fs::read_link(&target).context("could not read symlink")?;
+                        if actual != out_path {
+                            anyhow::bail!(
+                                "while building {}, I had conflicting writes to the cache path {}. I expected it to point to {}, but instead it points to {}.",
+                                script_name,
+                                target.display(),
+                                out_path.display(),
+                                actual.display(),
+                            )
+                        }
+                    }
+                    _ => return Err(err).context("could not create symlink in cache"),
+                }
+            }
         } else {
             log::debug!("hashed path exists; skipping build");
         }
