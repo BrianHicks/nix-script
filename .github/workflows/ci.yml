@@ -4,6 +4,9 @@ on:
   pull_request:
   push:
 
+env:
+  NIX_SCRIPT_LOG: trace
+
 jobs:
   build-and-test:
     name: build and test
