@@ -7,8 +7,10 @@ use path_absolutize::Absolutize;
 use seahash::SeaHasher;
 use std::fs;
 use std::hash::Hasher;
+use std::os::unix::ffi::OsStrExt;
 use std::path::{Path, PathBuf};
 use std::process::{Command, Stdio};
+use walkdir::WalkDir;
 
 #[derive(Debug)]
 pub struct Builder {
@@ -116,6 +118,10 @@ impl Builder {
 
             hasher.write(derivation.to_string().as_ref());
         }
+
+        self.source
+            .hash(&mut hasher)
+            .context("could not hash source")?;
 
         Ok(format!("{:x}", hasher.finish()))
     }
@@ -288,6 +294,43 @@ impl Source {
             Self::Script { .. } => false,
             Self::Directory { root, .. } => root.join("default.nix").exists(),
         }
+    }
+
+    fn hash<H: Hasher>(&self, hasher: &mut H) -> Result<()> {
+        match self {
+            Self::Script { script, .. } => {
+                log::debug!("hashing {}", script.display());
+                hasher.write(
+                    fs::read_to_string(script)
+                        .context("could not read script contents")?
+                        .as_ref(),
+                )
+            }
+            Self::Directory { root, .. } => {
+                for path_res in WalkDir::new(root)
+                    .min_depth(1)
+                    .follow_links(true)
+                    .sort_by_file_name()
+                {
+                    let path = path_res.context("could not read directory entry")?;
+                    if path.file_type().is_dir() {
+                        continue;
+                    }
+
+                    log::debug!("hashing {}", path.path().display());
+                    hasher.write(path.file_name().as_bytes());
+                    hasher.write(
+                        fs::read_to_string(path.path())
+                            .with_context(|| {
+                                format!("could not read {} in script source", path.path().display())
+                            })?
+                            .as_ref(),
+                    );
+                }
+            }
+        };
+
+        Ok(())
     }
 }
 
