@@ -24,6 +24,7 @@ jobs:
           name: nix-script
           authToken: '${{ secrets.CACHIX_AUTH_TOKEN }}'
 
+      - run: nix build --print-build-logs
       - run: nix develop --command bash -c 'cargo test -j $NIX_BUILD_CORES'
 
   rustfmt:
