@@ -9,7 +9,9 @@ use anyhow::{Context, Result};
 use clap::Parser;
 use clean_path::clean_path;
 use std::os::unix::fs::symlink;
+use std::os::unix::process::ExitStatusExt;
 use std::path::PathBuf;
+use std::process::{Command, ExitStatus};
 
 // TODO: options for the rest of the directives
 #[derive(Debug, Parser)]
@@ -58,13 +60,19 @@ struct Opts {
 }
 
 impl Opts {
-    fn run(&self) -> Result<()> {
+    fn run(&self) -> Result<ExitStatus> {
         // First things first: what are we running? Where does it live? What
         // are its arguments?
-        let (mut script, _args) = self
+        let (mut script, args) = self
             .parse_script_and_args()
             .context("could not parse script and args")?;
         script = clean_path(&script).context("could not clean path to script")?;
+
+        let script_name = script
+            .file_name()
+            .context("script did not have a file name")?
+            .to_str()
+            .context("filename was not valid UTF-8")?;
 
         let mut builder = if let Some(root) = &self.root {
             Builder::from_directory(root, &script)
@@ -88,7 +96,7 @@ impl Opts {
                 "{}",
                 serde_json::to_string(&directives).context("could not serialize directives")?
             );
-            return Ok(());
+            return Ok(ExitStatus::from_raw(0));
         }
 
         // Second place we can bail early: if someone wants the generated
@@ -109,7 +117,7 @@ impl Opts {
                     .derivation(&directives, true)
                     .context("could not create a Nix derivation from the script")?
             );
-            return Ok(());
+            return Ok(ExitStatus::from_raw(0));
         }
 
         let cache_directory = self
@@ -125,15 +133,9 @@ impl Opts {
             .context("could not calculate cache location for the script's compiled version")?;
 
         // create hash, check cache
-        let target = cache_directory.join(format!(
-            "{}-{}",
-            hash,
-            script
-                .file_name()
-                .context("script did not have a file name")?
-                .to_string_lossy()
-        ));
+        let target = cache_directory.join(format!("{}-{}", hash, script_name));
         log::trace!("cache target: {}", target.display());
+
         if !target.exists() {
             log::debug!("hashed path does not exist; building");
 
@@ -141,14 +143,17 @@ impl Opts {
                 .build(&cache_directory, &directives)
                 .context("could not build derivation from script")?;
 
-            symlink(out_path, target).context("could not create symlink in cache")?;
+            symlink(out_path, &target).context("could not create symlink in cache")?;
         } else {
             log::debug!("hashed path exists; skipping build");
         }
 
-        // TODO: run the executable with the given args
+        let mut child = Command::new(target.join("bin").join(script_name))
+            .args(args)
+            .spawn()
+            .context("could not start the script")?;
 
-        Ok(())
+        child.wait().context("could not run the script")
     }
 
     fn parse_script_and_args(&self) -> Result<(PathBuf, Vec<String>)> {
