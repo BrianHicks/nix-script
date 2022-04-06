@@ -5,4 +5,4 @@
 # shellcheck shell=bash
 set -euo pipefail
 
-echo '{"message": "Hello, World!"}' | jq .
+echo '{"message": "Hello, World!"}' | jq -r .message
