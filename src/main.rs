@@ -192,8 +192,15 @@ fn main() {
     let opts = Opts::parse();
     log::trace!("opts: {:?}", opts);
 
-    if let Err(err) = opts.run() {
-        eprintln!("{:?}", err);
-        std::process::exit(1)
+    match opts.run().map(|status| status.code()) {
+        Ok(Some(code)) => std::process::exit(code),
+        Ok(None) => {
+            log::warn!("we didn't receive an exit code; was the script killed with a signal?");
+            std::process::exit(1)
+        }
+        Err(err) => {
+            eprintln!("{:?}", err);
+            std::process::exit(1)
+        }
     }
 }
