@@ -124,9 +124,7 @@ impl Opts {
             .context("could not calculate cache location for the script's compiled version")?;
         log::trace!("hash: {}", hash);
 
-        // TODO: create hash, check cache. If we've got a hit, proceed to the
-        // last TODO in here.
-
+        // create hash, check cache
         let target = cache_directory.join(hash);
         if !target.exists() {
             log::debug!("hashed path does not exist; building");
