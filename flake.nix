@@ -15,14 +15,6 @@
           root = ./.;
 
           buildInputs = [ pkgs.clippy ];
-          doCheck = true;
-          checkPhase = ''
-            export NIX_SCRIPT_LOG=trace
-            export NIX_SCRIPT_CACHE=cache
-
-            cargo test $cargo_release -j "$NIX_BUILD_CORES"
-            cargo clippy -- --deny warnings
-          '';
         };
 
         defaultPackage = packages.nix-script;
