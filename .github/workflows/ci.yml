@@ -52,4 +52,7 @@ jobs:
           name: nix-script
           skipPush: true
 
-      - run: nix develop --command cargo clippy -- --deny warnings
+      # I'd like to do this with `nix develop` as above, but it complains like so:
+      #
+      # > error: /lib/x86_64-linux-gnu/libc.so.6: version `GLIBC_2.33' not found`
+      - run: nix-shell --pure -p cargo clippy libiconv --run 'cargo clippy -- --deny warnings'
