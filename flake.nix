@@ -21,6 +21,8 @@
         overlay = final: prev: { nix-script = packages.nix-script; };
 
         devShell = pkgs.mkShell {
+          NIX_PKGS = inputs.nixpkgs;
+
           packages = [
             # rust
             pkgs.rustc
