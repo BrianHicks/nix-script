@@ -8,6 +8,7 @@ use crate::builder::Builder;
 use anyhow::{Context, Result};
 use clap::Parser;
 use clean_path::clean_path;
+use std::os::unix::fs::symlink;
 use std::path::PathBuf;
 
 // TODO: options for the rest of the directives
@@ -132,7 +133,8 @@ impl Opts {
             let out_path = builder
                 .build(&cache_directory, &directives)
                 .context("could not build derivation from script")?;
-            println!("{}", out_path.display());
+
+            symlink(out_path, target).context("could not create symlink in cache")?;
         } else {
             log::debug!("hashed path exists; skipping build");
         }
