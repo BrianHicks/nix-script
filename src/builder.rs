@@ -115,10 +115,12 @@ impl Builder {
         // does.) The cost is not huge if we have to change it, though... just
         // a few rebuilds. It's probably fine?
         directives.hash(&mut hasher);
+        log::trace!("hashed directives, hash is now {:x}", hasher.finish());
 
         self.source
             .hash(&mut hasher)
             .context("could not hash source")?;
+        log::trace!("hashed source, hash is now {:x}", hasher.finish());
 
         Ok(format!("{:x}", hasher.finish()))
     }
