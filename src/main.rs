@@ -8,7 +8,6 @@ use crate::builder::Builder;
 use anyhow::{Context, Result};
 use clap::Parser;
 use clean_path::clean_path;
-use std::fs;
 use std::io::ErrorKind;
 use std::os::unix::fs::symlink;
 use std::os::unix::process::ExitStatusExt;
