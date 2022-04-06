@@ -122,16 +122,22 @@ impl Opts {
         let hash = builder
             .hash(&directives)
             .context("could not calculate cache location for the script's compiled version")?;
-
-        log::warn!("hash: {}", hash);
+        log::trace!("hash: {}", hash);
 
         // TODO: create hash, check cache. If we've got a hit, proceed to the
         // last TODO in here.
 
-        let out_path = builder
-            .build(&cache_directory, &directives)
-            .context("could not build derivation from script")?;
-        println!("{}", out_path.display());
+        let target = cache_directory.join(hash);
+        if !target.exists() {
+            log::debug!("hashed path does not exist; building");
+
+            let out_path = builder
+                .build(&cache_directory, &directives)
+                .context("could not build derivation from script")?;
+            println!("{}", out_path.display());
+        } else {
+            log::debug!("hashed path exists; skipping build");
+        }
 
         // TODO: store in the cache
 
