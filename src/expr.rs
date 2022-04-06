@@ -4,7 +4,7 @@ use rnix::{SyntaxKind, SyntaxNode};
 use std::cmp::Ordering;
 use std::fmt::{self, Display};
 
-#[derive(Debug, Eq, serde::Serialize, Clone)]
+#[derive(Debug, Eq, serde::Serialize, Clone, Hash)]
 pub struct Expr {
     raw: String,
     #[serde(skip)]

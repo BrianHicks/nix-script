@@ -6,6 +6,7 @@ use once_cell::unsync::OnceCell;
 use path_absolutize::Absolutize;
 use seahash::SeaHasher;
 use std::fs;
+use std::hash::Hash;
 use std::hash::Hasher;
 use std::os::unix::ffi::OsStrExt;
 use std::path::{Path, PathBuf};
@@ -109,15 +110,11 @@ impl Builder {
     pub fn hash(&self, directives: &Directives) -> Result<String> {
         let mut hasher = SeaHasher::new();
 
-        if !self.source.has_default_nix() {
-            log::trace!("including derivation in hash");
-
-            let derivation = self
-                .derivation(directives, false)
-                .context("could not generate derivation to include in hash")?;
-
-            hasher.write(derivation.to_string().as_ref());
-        }
+        // TODO: should we use the derivation here instead? It seems like this
+        // should be equivalent (that is, it should change when the derivation
+        // does.) The cost is not huge if we have to change it, though... just
+        // a few rebuilds. It's probably fine?
+        directives.hash(&mut hasher);
 
         self.source
             .hash(&mut hasher)
