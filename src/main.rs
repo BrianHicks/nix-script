@@ -8,6 +8,7 @@ use crate::builder::Builder;
 use anyhow::{Context, Result};
 use clap::Parser;
 use clean_path::clean_path;
+use std::os::unix::fs::symlink;
 use std::path::PathBuf;
 
 // TODO: options for the rest of the directives
@@ -119,13 +120,31 @@ impl Opts {
             cache_directory.display()
         );
 
-        // TODO: create hash, check cache. If we've got a hit, proceed to the
-        // last TODO in here.
+        let hash = builder
+            .hash(&directives)
+            .context("could not calculate cache location for the script's compiled version")?;
 
-        let out_path = builder
-            .build(&cache_directory, &directives)
-            .context("could not build derivation from script")?;
-        println!("{}", out_path.display());
+        // create hash, check cache
+        let target = cache_directory.join(format!(
+            "{}-{}",
+            hash,
+            script
+                .file_name()
+                .context("script did not have a file name")?
+                .to_string_lossy()
+        ));
+        log::trace!("cache target: {}", target.display());
+        if !target.exists() {
+            log::debug!("hashed path does not exist; building");
+
+            let out_path = builder
+                .build(&cache_directory, &directives)
+                .context("could not build derivation from script")?;
+
+            symlink(out_path, target).context("could not create symlink in cache")?;
+        } else {
+            log::debug!("hashed path exists; skipping build");
+        }
 
         // TODO: store in the cache
 

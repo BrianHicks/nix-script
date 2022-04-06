@@ -1,4 +1,5 @@
 use anyhow::{Context, Result};
+use core::hash::{Hash, Hasher};
 use rnix::types::{List, TypedNode, Wrapper};
 use rnix::{SyntaxKind, SyntaxNode};
 use std::cmp::Ordering;
@@ -94,6 +95,12 @@ impl Ord for Expr {
 impl PartialOrd for Expr {
     fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
         self.raw.partial_cmp(&other.raw)
+    }
+}
+
+impl Hash for Expr {
+    fn hash<H: Hasher>(&self, hasher: &mut H) {
+        hasher.write(self.raw.as_ref())
     }
 }
 

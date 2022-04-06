@@ -4,9 +4,14 @@ use crate::directives::Directives;
 use anyhow::{Context, Result};
 use once_cell::unsync::OnceCell;
 use path_absolutize::Absolutize;
+use seahash::SeaHasher;
 use std::fs;
+use std::hash::Hash;
+use std::hash::Hasher;
+use std::os::unix::ffi::OsStrExt;
 use std::path::{Path, PathBuf};
 use std::process::{Command, Stdio};
+use walkdir::WalkDir;
 
 #[derive(Debug)]
 pub struct Builder {
@@ -102,6 +107,24 @@ impl Builder {
         Ok(derivation)
     }
 
+    pub fn hash(&self, directives: &Directives) -> Result<String> {
+        let mut hasher = SeaHasher::new();
+
+        // TODO: should we use the derivation here instead? It seems like this
+        // should be equivalent (that is, it should change when the derivation
+        // does.) The cost is not huge if we have to change it, though... just
+        // a few rebuilds. It's probably fine?
+        directives.hash(&mut hasher);
+        log::trace!("hashed directives, hash is now {:x}", hasher.finish());
+
+        self.source
+            .hash(&mut hasher)
+            .context("could not hash source")?;
+        log::trace!("hashed source, hash is now {:x}", hasher.finish());
+
+        Ok(format!("{:x}", hasher.finish()))
+    }
+
     pub fn build(&mut self, cache_root: &Path, directives: &Directives) -> Result<PathBuf> {
         log::trace!("building");
 
@@ -109,12 +132,12 @@ impl Builder {
             .isolate(cache_root)
             .context("could not isolate source in order to build")?;
 
-        let (build_path, write_default_nix) = self
+        let build_path = self
             .source
             .derivation_path(cache_root)
             .context("could not determine where to run the build")?;
 
-        if write_default_nix {
+        if !self.source.has_default_nix() {
             let derivation = self
                 .derivation(directives, false)
                 .context("could not prepare derivation to build")?;
@@ -185,10 +208,13 @@ impl Source {
 
     fn root(&self) -> Result<&Path> {
         match self {
-            Self::Script { tempdir, .. } => Ok(tempdir
+            Self::Script {
+                tempdir, script, ..
+            } => Ok(tempdir
                 .get()
-                .map(|tempdir| &tempdir.build)
-                .context("the temporary directory has not been created yet")?),
+                .map(|tempdir| tempdir.build.as_ref())
+                .or_else(|| script.parent())
+                .context("can't find a path to the root for this script. This is probably a bug and you should report it!")?),
             Self::Directory {
                 tempdir,
                 root,
@@ -244,22 +270,66 @@ impl Source {
         }
     }
 
-    fn derivation_path(&self, cache_root: &Path) -> Result<(&PathBuf, bool)> {
+    fn derivation_path(&self, cache_root: &Path) -> Result<&PathBuf> {
         match self {
             Self::Script { tempdir, .. } =>
                 tempdir.get()
                     .context("I'm trying to build a script but have not created a temporary directory. This is an internal error and you should report it!")
-                    .map(|temp| (&temp.build, true)),
+                    .map(|temp| &temp.build),
             Self::Directory { root, tempdir, .. } => if root.join("default.nix").exists() {
-                Ok((root, false))
+                Ok(root)
             } else {
                 let target = tempdir
                     .get_or_try_init(|| TempDir::new_in(cache_root))
                     .context("could not create a place to write default.nix away from the source root")?;
 
-                Ok((&target.build, true))
+                Ok(&target.build)
             },
         }
+    }
+
+    fn has_default_nix(&self) -> bool {
+        match self {
+            Self::Script { .. } => false,
+            Self::Directory { root, .. } => root.join("default.nix").exists(),
+        }
+    }
+
+    fn hash<H: Hasher>(&self, hasher: &mut H) -> Result<()> {
+        match self {
+            Self::Script { script, .. } => {
+                log::debug!("hashing {}", script.display());
+                hasher.write(
+                    fs::read_to_string(script)
+                        .context("could not read script contents")?
+                        .as_ref(),
+                )
+            }
+            Self::Directory { root, .. } => {
+                for path_res in WalkDir::new(root)
+                    .min_depth(1)
+                    .follow_links(true)
+                    .sort_by_file_name()
+                {
+                    let path = path_res.context("could not read directory entry")?;
+                    if path.file_type().is_dir() {
+                        continue;
+                    }
+
+                    log::debug!("hashing {}", path.path().display());
+                    hasher.write(path.file_name().as_bytes());
+                    hasher.write(
+                        fs::read_to_string(path.path())
+                            .with_context(|| {
+                                format!("could not read {} in script source", path.path().display())
+                            })?
+                            .as_ref(),
+                    );
+                }
+            }
+        };
+
+        Ok(())
     }
 }
 
