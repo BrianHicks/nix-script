@@ -148,6 +148,8 @@ impl Opts {
             if let Err(err) = symlink(&out_path, &target) {
                 match err.kind() {
                     ErrorKind::AlreadyExists => {
+                        log::debug!("detected a parallel write to the cache");
+
                         let actual = fs::read_link(&target).context("could not read symlink")?;
                         if actual != out_path {
                             anyhow::bail!(
