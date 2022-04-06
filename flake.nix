@@ -15,6 +15,11 @@
           root = ./.;
 
           buildInputs = [ pkgs.clippy ];
+
+          doCheck = true;
+          checkPhase = ''
+            cargo clippy -- --deny warnings
+          '';
         };
 
         defaultPackage = packages.nix-script;
