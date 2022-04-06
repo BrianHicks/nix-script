@@ -27,4 +27,25 @@ mod sample_scripts {
 
         assert.success().stdout("Hello, World!\n");
     }
+
+    #[test]
+    fn forwards_success_code() {
+        let assert = bin().arg("tests/exit-with-code.sh").arg("0").assert();
+
+        assert.success();
+    }
+
+    #[test]
+    fn forwards_error_code() {
+        let assert = bin().arg("tests/exit-with-code.sh").arg("1").assert();
+
+        assert.code(1);
+    }
+
+    #[test]
+    fn forwards_custom_code() {
+        let assert = bin().arg("tests/exit-with-code.sh").arg("32").assert();
+
+        assert.code(32);
+    }
 }
