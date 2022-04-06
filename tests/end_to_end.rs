@@ -48,4 +48,14 @@ mod sample_scripts {
 
         assert.code(32);
     }
+
+    #[test]
+    fn forwards_stdin() {
+        let assert = bin()
+            .arg("tests/echo.sh")
+            .write_stdin("Hello, World!")
+            .assert();
+
+        assert.success().stdout("Hello, World!");
+    }
 }
