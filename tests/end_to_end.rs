@@ -27,6 +27,10 @@ mod sample_scripts {
 
         assert.success().stdout("Hello, World!\n");
     }
+}
+
+mod io_behavior {
+    use super::*;
 
     #[test]
     fn forwards_success_code() {
