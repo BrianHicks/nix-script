@@ -21,7 +21,7 @@ Each section is tagged with done-ness and determined-ness, with one of these val
 
 ## Transformation to Derivations
 
-*status: partially implemented* (needs work, still, to get the correct files)
+*status: partially implemented* (still needs to get to 100% coverage between directives and command-line flags)
 
 `nix-script` parses extra shebang (`#!`) lines into arguments to `mkDerivation`.
 This set of shebangs, when placed in `cool-script`:
@@ -97,14 +97,14 @@ Items that are expressions are left alone and items that appear to be references
 
 ### Exporting
 
-*status: partially implemented* (needs more thought on extra files)
+*status: implemented*
 
-Running `nix-script --export path/to/script` will print the derivation to stdout instead of building it.
+Running `nix-script --export --root path/to path/to/script.sh` will print the derivation to stdout instead of building it.
 We intend here to provide a mechanism for things like import-from-derivation.
 
 ## Caching
 
-*status: defined*
+*status: partially implemented* (still need to check for GC'd symlinks)
 
 `nix-script` manages a directory of symlinks for caching.
 The names of these links are script hashes and the targets are locations under `/nix/store`.
@@ -122,10 +122,13 @@ When `nix-script` is invoked, the basic operation is to:
 
 ### Hash Calculation
 
-*status: speculative*
+*status: defined*
 
-The hash is *mostly* the hash of the source.
-However, as we add other files source we may add more the the hash key.
+The hash includes:
+
+- the bytes of the script source
+- the directives calculated between script source and command-line flags
+- bytes of any files in the file specified by `--root`
 
 ## Shell mode
 
