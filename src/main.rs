@@ -148,18 +148,13 @@ impl Opts {
             if let Err(err) = symlink(&out_path, &target) {
                 match err.kind() {
                     ErrorKind::AlreadyExists => {
-                        log::debug!("detected a parallel write to the cache");
-
-                        let actual = fs::read_link(&target).context("could not read symlink")?;
-                        if actual != out_path {
-                            anyhow::bail!(
-                                "while building {}, I had conflicting writes to the cache path {}. I expected it to point to {}, but instead it points to {}.",
-                                script_name,
-                                target.display(),
-                                out_path.display(),
-                                actual.display(),
-                            )
-                        }
+                        // we could hypothetically detect if the link is
+                        // pointing to the right location, but the Nix paths
+                        // change for minor reasons that don't matter for
+                        // script execution. Instead, we just warn here and
+                        // trust our cache key to do the right thing. If we
+                        // get a collision, we do!
+                        log::warn!("detected a parallel write to the cache");
                     }
                     _ => return Err(err).context("could not create symlink in cache"),
                 }
