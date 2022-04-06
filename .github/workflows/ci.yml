@@ -40,19 +40,3 @@ jobs:
           skipPush: true
 
       - run: nix develop --command rustfmt --check $(find . -name "*.rs" -not -ipath '*target*')
-
-  clippy:
-    name: clippy
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v3
-      - uses: cachix/install-nix-action@v16
-      - uses: cachix/cachix-action@v10
-        with:
-          name: nix-script
-          skipPush: true
-
-      # I'd like to do this with `nix develop` as above, but it complains like so:
-      #
-      # > error: /lib/x86_64-linux-gnu/libc.so.6: version `GLIBC_2.33' not found`
-      - run: nix-shell --pure -p cargo clippy libiconv --run 'cargo clippy -- --deny warnings'
