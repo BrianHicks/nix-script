@@ -146,8 +146,6 @@ impl Opts {
             log::debug!("hashed path exists; skipping build");
         }
 
-        // TODO: store in the cache
-
         // TODO: run the executable with the given args
 
         Ok(())
