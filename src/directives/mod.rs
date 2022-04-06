@@ -2,9 +2,10 @@ mod parser;
 
 use crate::expr::Expr;
 use anyhow::{Context, Result};
+use core::hash::{Hash, Hasher};
 use std::collections::HashMap;
 
-#[derive(Debug, serde::Serialize, Hash)]
+#[derive(Debug, serde::Serialize)]
 pub struct Directives {
     pub build_command: Option<String>,
     pub build_inputs: Vec<Expr>,
@@ -78,6 +79,26 @@ impl Directives {
     pub fn maybe_override_interpreter(&mut self, maybe_new: &Option<String>) {
         if maybe_new.is_some() {
             self.interpreter = maybe_new.to_owned()
+        }
+    }
+}
+
+impl Hash for Directives {
+    fn hash<H: Hasher>(&self, hasher: &mut H) {
+        if let Some(build_command) = &self.build_command {
+            hasher.write(build_command.as_ref())
+        }
+
+        for input in &self.build_inputs {
+            input.hash(hasher)
+        }
+
+        if let Some(interpreter) = &self.interpreter {
+            hasher.write(interpreter.as_ref())
+        }
+
+        for input in &self.runtime_inputs {
+            input.hash(hasher)
         }
     }
 }
