@@ -6,6 +6,7 @@ on:
 
 env:
   NIX_SCRIPT_LOG: trace
+  NIX_SCRIPT_CACHE: cache
 
 jobs:
   build-and-test:
