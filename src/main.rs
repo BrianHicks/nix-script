@@ -123,10 +123,17 @@ impl Opts {
         let hash = builder
             .hash(&directives)
             .context("could not calculate cache location for the script's compiled version")?;
-        log::trace!("hash: {}", hash);
 
         // create hash, check cache
-        let target = cache_directory.join(hash);
+        let target = cache_directory.join(format!(
+            "{}-{}",
+            hash,
+            script
+                .file_name()
+                .context("script did not have a file name")?
+                .to_string_lossy()
+        ));
+        log::trace!("cache target: {}", target.display());
         if !target.exists() {
             log::debug!("hashed path does not exist; building");
 
