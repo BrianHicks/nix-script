@@ -8,6 +8,7 @@ use seahash::SeaHasher;
 use std::fs;
 use std::hash::Hash;
 use std::hash::Hasher;
+use std::io::ErrorKind;
 use std::os::unix::ffi::OsStrExt;
 use std::path::{Path, PathBuf};
 use std::process::{Command, Stdio};
@@ -154,6 +155,12 @@ impl Builder {
             .stdout(Stdio::piped())
             .stderr(Stdio::inherit())
             .output()
+            .map_err(|err| match err.kind() {
+                ErrorKind::NotFound => {
+                    anyhow::anyhow!("I couldn't call nix-build because I couldn't find the nix-build binary. Is Nix installed?")
+                }
+                _ => anyhow::anyhow!("{}", err),
+            })
             .context("failed to build")?;
 
         match output.status.code() {
