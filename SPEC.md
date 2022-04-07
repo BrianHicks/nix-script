@@ -69,7 +69,7 @@ Command-line arguments always take precedence, then shebangs.
 
 ### Keys Accepted
 
-*status: partially defined* (needs thought on extra files)
+*status: implemented*
 
 | `#!` line         | Meaning                                       | Notes                                                                                                                |
 |-------------------|-----------------------------------------------|----------------------------------------------------------------------------------------------------------------------|
@@ -80,7 +80,7 @@ Command-line arguments always take precedence, then shebangs.
 | `#!interpreter`   | interpret "built" binary with this script     | Must be a binary which accepts at least one argument (the build source). Binary must be provided by `runtimeInputs`. |
 | `#!runtimeFiles`  | files or directories to include at build time | multiple calls will be merged.                                                                                       |
 
-### What about environment variables?
+### What about environment variables as inputs?
 
 *status: speculative*
 
