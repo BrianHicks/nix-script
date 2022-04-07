@@ -31,6 +31,9 @@ mod sample_scripts {
 
 mod io_behavior {
     use super::*;
+    use std::os::unix::fs::symlink;
+    use std::path::PathBuf;
+    use tempfile::tempdir;
 
     #[test]
     fn forwards_success_code() {
@@ -61,5 +64,35 @@ mod io_behavior {
             .assert();
 
         assert.success().stdout("Hello, World!");
+    }
+
+    #[test]
+    fn gc_safety() {
+        let temp = tempdir().unwrap();
+
+        // run once to set up the cache
+        bin()
+            .env("NIX_SCRIPT_CACHE", temp.path().display().to_string())
+            .arg("tests/exit-with-code.sh")
+            .arg("0")
+            .assert()
+            .success();
+
+        // mess with the symlink to make it point to an invalid destination. Note
+        // that we can't use the more ergonomic `DirEntry.path()` here because
+        // it traverses symlinks.
+        let mut cache_entries = std::fs::read_dir(temp.path()).unwrap();
+        let filename = cache_entries.next().unwrap().unwrap().file_name();
+        let link = temp.path().join(filename);
+        std::fs::remove_file(&link).unwrap();
+        symlink(PathBuf::from("garbage"), &link).unwrap();
+
+        // run the command again to make sure we handle the newly-bad link
+        bin()
+            .env("NIX_SCRIPT_CACHE", temp.path().display().to_string())
+            .arg("tests/exit-with-code.sh")
+            .arg("0")
+            .assert()
+            .success();
     }
 }
