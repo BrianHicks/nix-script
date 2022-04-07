@@ -33,7 +33,10 @@ impl Derivation {
         );
 
         Ok(Self {
-            inputs: Inputs::from(vec![("pkgs".into(), Some("import <nixpkgs> { }".into()))]),
+            inputs: Inputs::from(vec![
+                ("pkgs".into(), Some("import <nixpkgs> { }".into())),
+                ("makeWrapper".into(), Some("pkgs.makeWrapper".into())),
+            ]),
             name: src
                 .file_name()
                 .and_then(|name| name.to_str())
@@ -80,15 +83,10 @@ impl Derivation {
             },
         ));
 
-        log::debug!("depending on makeWrapper since we have an interpreter");
-        self.depend_on_make_wrapper();
-
         Ok(())
     }
 
     pub fn add_runtime_inputs(&mut self, runtime_inputs: Vec<Expr>) {
-        log::debug!("depending on makeWrapper since we have runtime inputs");
-        self.depend_on_make_wrapper();
         for runtime_input in runtime_inputs {
             if runtime_input.is_extractable() {
                 log::trace!("extracting build input `{}`", runtime_input);
@@ -99,13 +97,6 @@ impl Derivation {
             }
             self.runtime_inputs.insert(runtime_input);
         }
-    }
-
-    fn depend_on_make_wrapper(&mut self) {
-        self.inputs.insert(
-            "makeWrapper".to_string(),
-            Some("pkgs.makeWrapper".to_string()),
-        );
     }
 }
 
