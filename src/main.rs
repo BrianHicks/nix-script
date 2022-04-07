@@ -102,6 +102,17 @@ impl Opts {
                 build_root = Some(out);
             }
         };
+        if build_root.is_none()
+            && (!self.runtime_files.is_empty() || !directives.runtime_files.is_empty())
+        {
+            log::warn!("Requested runtime files without specifying a build root. I'm assuming it's the parent directory of the script for now, but you should set it explicitly!");
+            build_root = Some(
+                script
+                    .parent()
+                    .map(|p| p.to_owned())
+                    .unwrap_or_else(|| PathBuf::from(".")),
+            );
+        }
 
         let mut builder = if let Some(build_root) = &build_root {
             Builder::from_directory(build_root, &script)
