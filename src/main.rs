@@ -139,14 +139,11 @@ impl Opts {
         log::trace!("cache target: {}", target.display());
 
         if fs::symlink_metadata(&target).is_ok() {
-            match fs::read_link(&target) {
-                Ok(link) => {
-                    if !link.exists() {
-                        log::info!("removing stale (garbage-collected?) symlink");
-                        fs::remove_file(&target);
-                    }
-                }
-                Err(err) => return Err(err).context("failed to read existing symlink"),
+            let link_target = fs::read_link(&target).context("failed to read existing symlink")?;
+
+            if !link_target.exists() {
+                log::info!("removing stale (garbage-collected?) symlink");
+                fs::remove_file(&target);
             }
         }
 
