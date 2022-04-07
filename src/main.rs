@@ -84,7 +84,9 @@ impl Opts {
         directives.maybe_override_build_command(&self.build_command);
         directives.maybe_override_interpreter(&self.interpreter);
 
-        let mut builder = if let Some(root) = &self.root {
+        let root = self.root.as_ref().or(directives.root.as_ref());
+
+        let mut builder = if let Some(root) = &root {
             Builder::from_directory(root, &script)
                 .context("could not initialize source in directory")?
         } else {
@@ -107,7 +109,7 @@ impl Opts {
             // We check here instead of inside while isolating the script or
             // similar so we can get an early bail that doesn't create trash
             // in the system's temporary directories.
-            if self.root.is_none() {
+            if root.is_none() {
                 anyhow::bail!(
                     "I don't have a root to refer to while exporting, so I can't isolate the script and dependencies. Specify a --root and try this again!"
                 )
