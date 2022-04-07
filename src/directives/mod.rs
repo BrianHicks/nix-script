@@ -82,7 +82,7 @@ impl Directives {
     ) -> Vec<PathBuf> {
         match fields.get(field) {
             None => Vec::new(),
-            Some(lines) => lines.join(" ").split(" ").map(PathBuf::from).collect(),
+            Some(lines) => lines.join(" ").split(' ').map(PathBuf::from).collect(),
         }
     }
 
@@ -98,9 +98,9 @@ impl Directives {
         }
     }
 
-    pub fn merge_runtime_files(&mut self, new: &Vec<PathBuf>) {
+    pub fn merge_runtime_files(&mut self, new: &[PathBuf]) {
         for item in new {
-            if !self.runtime_files.contains(&item) {
+            if !self.runtime_files.contains(item) {
                 self.runtime_files.push(item.to_owned())
             }
         }
