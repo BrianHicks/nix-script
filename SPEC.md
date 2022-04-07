@@ -186,3 +186,14 @@ For example:
   "runtime_inputs": []
 }
 ```
+
+## Runtime Variables
+
+*status: partially defined* (and partially implemented)
+
+We set some environment variables that the script can access at runtime:
+
+| Variable             | Meaning                                                                                                            |
+|----------------------|--------------------------------------------------------------------------------------------------------------------|
+| `RUNTIME_FILES_ROOT` | If `#!runtimeFiles` or `--runtime-files` was specified, this is set to where we put them.                          |
+| `SCRIPT_FILE`        | the name of the script as originally invoked (name is awkward but remains for compatibility with nix-script 1.0.0) |
