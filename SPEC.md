@@ -71,13 +71,14 @@ Command-line arguments always take precedence, then shebangs.
 
 *status: partially defined* (needs thought on extra files)
 
-| `#!` line         | Meaning                                      | Notes                                                                                                                |
-|-------------------|----------------------------------------------|----------------------------------------------------------------------------------------------------------------------|
-| `#!build`         | build command for script                     | should read from `$INPUT` and write to `$OUTPUT`. Will be run in the source directory.                               |
-| `#!buildInputs`   | build inputs, as a Nix list                  | e.g. `buildInputs = [ the-thing-you-specify ];`.                                                                     |
-| `#!runtimeInputs` | runtime inputs, as a Nix list                | see note on `buildInputs`.                                                                                           |
-| `#!interpreter`   | interpret "built" binary with this script    | Must be a binary which accepts at least one argument (the build source). Binary must be provided by `runtimeInputs`. |
-| `#!extraSrc`      | a file or directory to include at build time | multiple calls will be merged. Key name still up in the air.                                                         |
+| `#!` line         | Meaning                                       | Notes                                                                                                                |
+|-------------------|-----------------------------------------------|----------------------------------------------------------------------------------------------------------------------|
+| `#!build`         | build command for script                      | should read from `$INPUT` and write to `$OUTPUT`. Will be run in the source directory.                               |
+| `#!buildRoot`     | build step will include all source here       | must be a parent directory of the script                                                                             |
+| `#!buildInputs`   | build inputs, as a Nix list                   | e.g. `buildInputs = [ the-thing-you-specify ];`.                                                                     |
+| `#!runtimeInputs` | runtime inputs, as a Nix list                 | see note on `buildInputs`.                                                                                           |
+| `#!interpreter`   | interpret "built" binary with this script     | Must be a binary which accepts at least one argument (the build source). Binary must be provided by `runtimeInputs`. |
+| `#!runtimeFiles`  | files or directories to include at build time | multiple calls will be merged.                                                                                       |
 
 ### What about environment variables?
 
