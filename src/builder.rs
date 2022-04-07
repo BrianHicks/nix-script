@@ -62,11 +62,6 @@ impl Builder {
         })
     }
 
-    pub fn directives(&self, indicator: &str) -> Result<Directives> {
-        let source = self.source.read()?;
-        Directives::parse(indicator, &source).context("could not construct a directive parser")
-    }
-
     pub fn derivation(&self, directives: &Directives, for_export: bool) -> Result<Derivation> {
         let build_command = match &directives.build_command {
             Some(bc) => bc,
@@ -203,16 +198,6 @@ enum Source {
 }
 
 impl Source {
-    fn read(&self) -> Result<String> {
-        log::trace!("reading script source");
-        match self {
-            Self::Script { script, .. } => fs::read_to_string(&script)
-                .with_context(|| format!("could not read {}", script.display())),
-            Self::Directory { root, script, .. } => fs::read_to_string(root.join(script))
-                .with_context(|| format!("could not read {}", script.display())),
-        }
-    }
-
     fn root(&self) -> Result<&Path> {
         match self {
             Self::Script {

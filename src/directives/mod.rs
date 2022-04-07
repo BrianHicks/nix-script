@@ -4,6 +4,7 @@ use crate::expr::Expr;
 use anyhow::{Context, Result};
 use core::hash::{Hash, Hasher};
 use std::collections::HashMap;
+use std::path::Path;
 use std::path::PathBuf;
 
 #[derive(Debug, serde::Serialize)]
@@ -16,6 +17,11 @@ pub struct Directives {
 }
 
 impl Directives {
+    pub fn from_file(indicator: &str, filename: &Path) -> Result<Self> {
+        let source = std::fs::read_to_string(filename).context("could not read source")?;
+        Self::parse(indicator, &source)
+    }
+
     pub fn parse(indicator: &str, source: &str) -> Result<Self> {
         let parser = parser::Parser::new(indicator).context("could not construct a parser")?;
         let fields = parser.parse(source);
