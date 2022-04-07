@@ -148,7 +148,7 @@ impl Builder {
                 .context("could not write derivation contents")?;
         }
 
-        log::info!("building in {}", build_path.display());
+        log::info!("building");
         let mut output = Command::new("nix-build")
             .arg(build_path)
             .arg("--no-out-link") // TODO: it might be good to explicitly set `--out-link` to somewhere in the cache!

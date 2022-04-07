@@ -104,7 +104,7 @@ We intend here to provide a mechanism for things like import-from-derivation.
 
 ## Caching
 
-*status: partially implemented* (still need to check for GC'd symlinks)
+*status: implemented*
 
 `nix-script` manages a directory of symlinks for caching.
 The names of these links are script hashes and the targets are locations under `/nix/store`.

@@ -8,6 +8,7 @@ use crate::builder::Builder;
 use anyhow::{Context, Result};
 use clap::Parser;
 use clean_path::clean_path;
+use std::fs;
 use std::io::ErrorKind;
 use std::os::unix::fs::symlink;
 use std::os::unix::process::ExitStatusExt;
@@ -129,13 +130,26 @@ impl Opts {
             cache_directory.display()
         );
 
+        // create hash, check cache
         let hash = builder
             .hash(&directives)
             .context("could not calculate cache location for the script's compiled version")?;
 
-        // create hash, check cache
         let target = cache_directory.join(format!("{}-{}", hash, script_name));
         log::trace!("cache target: {}", target.display());
+
+        // before we perform the build, we need to check if the symlink target
+        // has gone stale. This can happen when you run `nix-collect-garbage`,
+        // since we don't pin the resulting derivations. We have to do things
+        // in a slightly less ergonomic way in order to not follow symlinks.
+        if fs::symlink_metadata(&target).is_ok() {
+            let link_target = fs::read_link(&target).context("failed to read existing symlink")?;
+
+            if !link_target.exists() {
+                log::info!("removing stale (garbage-collected?) symlink");
+                fs::remove_file(&target).context("could not remove stale symlink")?;
+            }
+        }
 
         if !target.exists() {
             log::debug!("hashed path does not exist; building");
