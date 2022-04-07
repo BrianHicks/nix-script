@@ -24,24 +24,9 @@ impl Directives {
 
     fn from_directives(fields: HashMap<&str, Vec<&str>>) -> Result<Self> {
         let build_command = Self::once("build", &fields)?.map(|s| s.to_owned());
-
-        // buildInputs (many)
-        let build_inputs = match fields.get("buildInputs") {
-            None => Vec::new(),
-            Some(lines) => {
-                Expr::parse_as_list(&lines.join(" ")).context("could not parse build inputs")?
-            }
-        };
-
+        let build_inputs = Self::exprs("buildInputs", &fields)?;
         let interpreter = Self::once("interpreter", &fields)?.map(|s| s.to_owned());
-
-        // runtimeInputs (many)
-        let runtime_inputs = match fields.get("runtimeInputs") {
-            None => Vec::new(),
-            Some(lines) => {
-                Expr::parse_as_list(&lines.join(" ")).context("could not parse runtime inputs")?
-            }
-        };
+        let runtime_inputs = Self::exprs("runtimeInputs", &fields)?;
 
         Ok(Directives {
             build_command,
@@ -64,6 +49,18 @@ impl Directives {
                 Ok(Some(value[0]))
             }
             None => Ok(None),
+        }
+    }
+
+    fn exprs<'field>(
+        field: &'field str,
+        fields: &HashMap<&'field str, Vec<&'field str>>,
+    ) -> Result<Vec<Expr>> {
+        match fields.get(field) {
+            None => Ok(Vec::new()),
+            Some(lines) => {
+                Expr::parse_as_list(&lines.join(" ")).context("could not parse runtime inputs")
+            }
         }
     }
 
