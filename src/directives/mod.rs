@@ -4,6 +4,7 @@ use crate::expr::Expr;
 use anyhow::{Context, Result};
 use core::hash::{Hash, Hasher};
 use std::collections::HashMap;
+use std::path::PathBuf;
 
 #[derive(Debug, serde::Serialize)]
 pub struct Directives {
@@ -22,17 +23,7 @@ impl Directives {
     }
 
     fn from_directives(fields: HashMap<&str, Vec<&str>>) -> Result<Self> {
-        // Build (once)
-        let build_command = match fields.get("build") {
-            Some(value) => {
-                if value.len() != 1 {
-                    anyhow::bail!("I got multiple build directives, and I don't know which to use. Remove all but one and try again!");
-                }
-
-                Some(value[0].to_owned())
-            }
-            None => None,
-        };
+        let build_command = Self::once("build", &fields)?.map(|s| s.to_owned());
 
         // buildInputs (many)
         let build_inputs = match fields.get("buildInputs") {
@@ -42,17 +33,7 @@ impl Directives {
             }
         };
 
-        // interpreter (once)
-        let interpreter = match fields.get("interpreter") {
-            Some(value) => {
-                if value.len() != 1 {
-                    anyhow::bail!("I got multiple interpreter directives, and I don't know which to use. Remove all but one and try again!");
-                }
-
-                Some(value[0].to_owned())
-            }
-            None => None,
-        };
+        let interpreter = Self::once("interpreter", &fields)?.map(|s| s.to_owned());
 
         // runtimeInputs (many)
         let runtime_inputs = match fields.get("runtimeInputs") {
@@ -68,6 +49,22 @@ impl Directives {
             interpreter,
             runtime_inputs,
         })
+    }
+
+    fn once<'field>(
+        field: &'field str,
+        fields: &HashMap<&'field str, Vec<&'field str>>,
+    ) -> Result<Option<&'field str>> {
+        match fields.get(field) {
+            Some(value) => {
+                if value.len() != 1 {
+                    anyhow::bail!("I got multiple `{}` directives, and I don't know which to use. Remove all but one and try again!", field);
+                }
+
+                Ok(Some(value[0]))
+            }
+            None => Ok(None),
+        }
     }
 
     pub fn maybe_override_build_command(&mut self, maybe_new: &Option<String>) {
@@ -116,7 +113,7 @@ mod tests {
                 .unwrap_err();
 
             assert_eq!(
-                String::from("I got multiple build directives, and I don't know which to use. Remove all but one and try again!"),
+                String::from("I got multiple `build` directives, and I don't know which to use. Remove all but one and try again!"),
                 problem.to_string(),
             )
         }
@@ -144,7 +141,7 @@ mod tests {
                     .unwrap_err();
 
             assert_eq!(
-                String::from("I got multiple interpreter directives, and I don't know which to use. Remove all but one and try again!"),
+                String::from("I got multiple `interpreter` directives, and I don't know which to use. Remove all but one and try again!"),
                 problem.to_string(),
             )
         }
