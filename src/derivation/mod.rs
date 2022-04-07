@@ -152,7 +152,7 @@ impl Display for Derivation {
 
         if !self.runtime_files.is_empty() {
             let target: PathBuf = ["$out", "usr", "share", &self.name].iter().collect();
-            write!(f, "\n\n    mkdir {}", target.display())?;
+            write!(f, "\n\n    mkdir -p {}", target.display())?;
             for file in &self.runtime_files {
                 write!(f, "\n    mv {} {}", &file.display(), target.display())?;
             }
