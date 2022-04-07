@@ -99,7 +99,7 @@ Items that are expressions are left alone and items that appear to be references
 
 *status: implemented*
 
-Running `nix-script --export --root path/to path/to/script.sh` will print the derivation to stdout instead of building it.
+Running `nix-script --export --build-root path/to path/to/script.sh` will print the derivation to stdout instead of building it.
 We intend here to provide a mechanism for things like import-from-derivation.
 
 ## Caching
@@ -128,7 +128,7 @@ The hash includes:
 
 - the bytes of the script source
 - the directives calculated between script source and command-line flags
-- bytes of any files in the file specified by `--root`
+- bytes of any files in the file specified by `--build-root`
 
 ## Shell mode
 
