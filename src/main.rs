@@ -46,7 +46,7 @@ struct Opts {
     /// to bring other files into scope in your build. If there is a `default.nix`
     /// file in the specified root, we will use that instead of generating our own.
     #[clap(long)]
-    root: Option<PathBuf>,
+    build_root: Option<PathBuf>,
 
     /// Where should we cache files?
     #[clap(long("cache-directory"), env("NIX_SCRIPT_CACHE"))]
@@ -84,9 +84,9 @@ impl Opts {
         directives.maybe_override_build_command(&self.build_command);
         directives.maybe_override_interpreter(&self.interpreter);
 
-        let mut root = self.root.to_owned();
-        if root.is_none() {
-            if let Some(from_directives) = &directives.root {
+        let mut build_root = self.build_root.to_owned();
+        if build_root.is_none() {
+            if let Some(from_directives) = &directives.build_root {
                 let out = script
                     .parent()
                     .map(Path::to_path_buf)
@@ -94,16 +94,16 @@ impl Opts {
 
                 out.join(from_directives)
                     .canonicalize()
-                    .context("could not canonicalize final path to script root")?;
+                    .context("could not canonicalize final path to build root")?;
 
                 log::debug!("path to root from script directive: {}", out.display());
 
-                root = Some(out);
+                build_root = Some(out);
             }
         };
 
-        let mut builder = if let Some(root) = &root {
-            Builder::from_directory(root, &script)
+        let mut builder = if let Some(build_root) = &build_root {
+            Builder::from_directory(build_root, &script)
                 .context("could not initialize source in directory")?
         } else {
             Builder::from_script(&script)
@@ -125,7 +125,7 @@ impl Opts {
             // We check here instead of inside while isolating the script or
             // similar so we can get an early bail that doesn't create trash
             // in the system's temporary directories.
-            if root.is_none() {
+            if build_root.is_none() {
                 anyhow::bail!(
                     "I don't have a root to refer to while exporting, so I can't isolate the script and dependencies. Specify a --root and try this again!"
                 )
