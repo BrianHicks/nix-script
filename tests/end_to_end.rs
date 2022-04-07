@@ -95,4 +95,13 @@ mod io_behavior {
             .assert()
             .success();
     }
+
+    #[test]
+    fn include_source_root() {
+        bin()
+            .arg("tests/with_root/script.sh")
+            .assert()
+            .success()
+            .stdout("Hello, World!");
+    }
 }
