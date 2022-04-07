@@ -97,6 +97,14 @@ impl Directives {
             self.interpreter = maybe_new.to_owned()
         }
     }
+
+    pub fn merge_runtime_files(&mut self, new: &Vec<PathBuf>) {
+        for item in new {
+            if !self.runtime_files.contains(&item) {
+                self.runtime_files.push(item.to_owned())
+            }
+        }
+    }
 }
 
 impl Hash for Directives {

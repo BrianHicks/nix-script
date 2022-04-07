@@ -48,6 +48,10 @@ struct Opts {
     #[clap(long)]
     build_root: Option<PathBuf>,
 
+    /// Include files for use at runtime (relative to the build root)
+    #[clap(long)]
+    runtime_files: Vec<PathBuf>,
+
     /// Where should we cache files?
     #[clap(long("cache-directory"), env("NIX_SCRIPT_CACHE"))]
     cache_directory: Option<PathBuf>,
@@ -81,8 +85,10 @@ impl Opts {
         let mut directives = Directives::from_file(&self.indicator, &script)
             .context("could not parse directives from script")?;
 
+        // TODO: do we need build root here?
         directives.maybe_override_build_command(&self.build_command);
         directives.maybe_override_interpreter(&self.interpreter);
+        directives.merge_runtime_files(&self.runtime_files);
 
         let mut build_root = self.build_root.to_owned();
         if build_root.is_none() {
