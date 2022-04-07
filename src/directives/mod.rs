@@ -107,6 +107,65 @@ impl Hash for Directives {
 mod tests {
     use super::*;
 
+    mod from_directives {
+        use super::*;
+
+        #[test]
+        fn only_one_build_command_allowed() {
+            let problem = Directives::from_directives(HashMap::from([("build", vec!["a", "b"])]))
+                .unwrap_err();
+
+            assert_eq!(
+                String::from("I got multiple build directives, and I don't know which to use. Remove all but one and try again!"),
+                problem.to_string(),
+            )
+        }
+
+        #[test]
+        fn combines_build_inputs() {
+            let directives =
+                Directives::from_directives(HashMap::from([("buildInputs", vec!["a b", "c d"])]))
+                    .unwrap();
+
+            let expected: Vec<Expr> = vec![
+                Expr::parse("a").unwrap(),
+                Expr::parse("b").unwrap(),
+                Expr::parse("c").unwrap(),
+                Expr::parse("d").unwrap(),
+            ];
+
+            assert_eq!(expected, directives.build_inputs);
+        }
+
+        #[test]
+        fn only_one_interpreter_allowed() {
+            let problem =
+                Directives::from_directives(HashMap::from([("interpreter", vec!["a", "b"])]))
+                    .unwrap_err();
+
+            assert_eq!(
+                String::from("I got multiple interpreter directives, and I don't know which to use. Remove all but one and try again!"),
+                problem.to_string(),
+            )
+        }
+
+        #[test]
+        fn combines_runtime_inputs() {
+            let directives =
+                Directives::from_directives(HashMap::from([("runtimeInputs", vec!["a b", "c d"])]))
+                    .unwrap();
+
+            let expected: Vec<Expr> = vec![
+                Expr::parse("a").unwrap(),
+                Expr::parse("b").unwrap(),
+                Expr::parse("c").unwrap(),
+                Expr::parse("d").unwrap(),
+            ];
+
+            assert_eq!(expected, directives.runtime_inputs);
+        }
+    }
+
     mod hash {
         use super::*;
 
