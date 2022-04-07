@@ -10,10 +10,10 @@ use std::path::PathBuf;
 #[derive(Debug, serde::Serialize)]
 pub struct Directives {
     pub build_command: Option<String>,
+    pub build_root: Option<PathBuf>,
     pub build_inputs: Vec<Expr>,
     pub interpreter: Option<String>,
     pub runtime_inputs: Vec<Expr>,
-    pub build_root: Option<PathBuf>,
 }
 
 impl Directives {
@@ -31,17 +31,17 @@ impl Directives {
 
     fn from_directives(fields: HashMap<&str, Vec<&str>>) -> Result<Self> {
         let build_command = Self::once("build", &fields)?.map(|s| s.to_owned());
+        let build_root = Self::once("buildRoot", &fields)?.map(PathBuf::from);
         let build_inputs = Self::exprs("buildInputs", &fields)?;
         let interpreter = Self::once("interpreter", &fields)?.map(|s| s.to_owned());
         let runtime_inputs = Self::exprs("runtimeInputs", &fields)?;
-        let build_root = Self::once("buildRoot", &fields)?.map(PathBuf::from);
 
         Ok(Directives {
             build_command,
+            build_root,
             build_inputs,
             interpreter,
             runtime_inputs,
-            build_root,
         })
     }
 
