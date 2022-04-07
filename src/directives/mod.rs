@@ -12,6 +12,7 @@ pub struct Directives {
     pub build_inputs: Vec<Expr>,
     pub interpreter: Option<String>,
     pub runtime_inputs: Vec<Expr>,
+    pub root: Option<PathBuf>,
 }
 
 impl Directives {
@@ -27,12 +28,14 @@ impl Directives {
         let build_inputs = Self::exprs("buildInputs", &fields)?;
         let interpreter = Self::once("interpreter", &fields)?.map(|s| s.to_owned());
         let runtime_inputs = Self::exprs("runtimeInputs", &fields)?;
+        let root = Self::once("root", &fields)?.map(PathBuf::from);
 
         Ok(Directives {
             build_command,
             build_inputs,
             interpreter,
             runtime_inputs,
+            root,
         })
     }
 
@@ -93,6 +96,10 @@ impl Hash for Directives {
 
         for input in &self.runtime_inputs {
             input.hash(hasher)
+        }
+
+        if let Some(root) = &self.root {
+            hasher.write(root.display().to_string().as_ref())
         }
     }
 }
@@ -158,6 +165,25 @@ mod tests {
 
             assert_eq!(expected, directives.runtime_inputs);
         }
+
+        #[test]
+        fn only_one_root_allowed() {
+            let problem =
+                Directives::from_directives(HashMap::from([("root", vec!["a", "b"])])).unwrap_err();
+
+            assert_eq!(
+                String::from("I got multiple `root` directives, and I don't know which to use. Remove all but one and try again!"),
+                problem.to_string(),
+            )
+        }
+
+        #[test]
+        fn sets_root() {
+            let directives =
+                Directives::from_directives(HashMap::from([("root", vec!["."])])).unwrap();
+
+            assert_eq!(Some(PathBuf::from(".")), directives.root)
+        }
     }
 
     mod hash {
@@ -206,6 +232,14 @@ mod tests {
             assert_have_different_hashes(
                 Directives::from_directives(HashMap::from([("runtimeInputs", vec!["a"])])).unwrap(),
                 Directives::from_directives(HashMap::from([("runtimeInputs", vec!["b"])])).unwrap(),
+            )
+        }
+
+        #[test]
+        fn root_changes_hash() {
+            assert_have_different_hashes(
+                Directives::from_directives(HashMap::from([("root", vec!["a"])])).unwrap(),
+                Directives::from_directives(HashMap::from([("root", vec!["b"])])).unwrap(),
             )
         }
     }
