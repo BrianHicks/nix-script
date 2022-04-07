@@ -5,6 +5,7 @@ mod directives;
 mod expr;
 
 use crate::builder::Builder;
+use crate::directives::Directives;
 use anyhow::{Context, Result};
 use clap::Parser;
 use clean_path::clean_path;
@@ -76,20 +77,19 @@ impl Opts {
             .to_str()
             .context("filename was not valid UTF-8")?;
 
+        // Get our directives all combined from various sources
+        let mut directives = Directives::from_file(&self.indicator, &script)
+            .context("could not parse directives from script")?;
+
+        directives.maybe_override_build_command(&self.build_command);
+        directives.maybe_override_interpreter(&self.interpreter);
+
         let mut builder = if let Some(root) = &self.root {
             Builder::from_directory(root, &script)
                 .context("could not initialize source in directory")?
         } else {
             Builder::from_script(&script)
         };
-
-        // Get our directives all combined from various sources
-        let mut directives = builder
-            .directives(&self.indicator)
-            .context("could not parse directives from script")?;
-
-        directives.maybe_override_build_command(&self.build_command);
-        directives.maybe_override_interpreter(&self.interpreter);
 
         // First place we might bail early: if a script just wants to parse
         // directives using our parser, we dump JSON and quit instead of running.
