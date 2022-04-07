@@ -97,9 +97,9 @@ mod io_behavior {
     }
 
     #[test]
-    fn include_source_root() {
+    fn include_runtime_file() {
         bin()
-            .arg("tests/with_root/script.sh")
+            .arg("tests/with_runtime_file/script.sh")
             .assert()
             .success()
             .stdout("Hello, World!");

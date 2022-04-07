@@ -2,6 +2,7 @@
 #!build cp $SRC $OUT
 #!interpreter bash
 #!runtimeInputs coreutils
+#!runtimeFiles message
 #!root .
 set -exuo pipefail
 
