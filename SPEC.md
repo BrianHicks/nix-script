@@ -69,17 +69,18 @@ Command-line arguments always take precedence, then shebangs.
 
 ### Keys Accepted
 
-*status: partially defined* (needs thought on extra files)
+*status: implemented*
 
-| `#!` line         | Meaning                                      | Notes                                                                                                                |
-|-------------------|----------------------------------------------|----------------------------------------------------------------------------------------------------------------------|
-| `#!build`         | build command for script                     | should read from `$INPUT` and write to `$OUTPUT`. Will be run in the source directory.                               |
-| `#!buildInputs`   | build inputs, as a Nix list                  | e.g. `buildInputs = [ the-thing-you-specify ];`.                                                                     |
-| `#!runtimeInputs` | runtime inputs, as a Nix list                | see note on `buildInputs`.                                                                                           |
-| `#!interpreter`   | interpret "built" binary with this script    | Must be a binary which accepts at least one argument (the build source). Binary must be provided by `runtimeInputs`. |
-| `#!extraSrc`      | a file or directory to include at build time | multiple calls will be merged. Key name still up in the air.                                                         |
+| `#!` line         | Meaning                                       | Notes                                                                                                                |
+|-------------------|-----------------------------------------------|----------------------------------------------------------------------------------------------------------------------|
+| `#!build`         | build command for script                      | should read from `$INPUT` and write to `$OUTPUT`. Will be run in the source directory.                               |
+| `#!buildRoot`     | build step will include all source here       | must be a parent directory of the script                                                                             |
+| `#!buildInputs`   | build inputs, as a Nix list                   | e.g. `buildInputs = [ the-thing-you-specify ];`.                                                                     |
+| `#!runtimeInputs` | runtime inputs, as a Nix list                 | see note on `buildInputs`.                                                                                           |
+| `#!interpreter`   | interpret "built" binary with this script     | Must be a binary which accepts at least one argument (the build source). Binary must be provided by `runtimeInputs`. |
+| `#!runtimeFiles`  | files or directories to include at build time | multiple calls will be merged.                                                                                       |
 
-### What about environment variables?
+### What about environment variables as inputs?
 
 *status: speculative*
 
@@ -99,7 +100,7 @@ Items that are expressions are left alone and items that appear to be references
 
 *status: implemented*
 
-Running `nix-script --export --root path/to path/to/script.sh` will print the derivation to stdout instead of building it.
+Running `nix-script --export --build-root path/to path/to/script.sh` will print the derivation to stdout instead of building it.
 We intend here to provide a mechanism for things like import-from-derivation.
 
 ## Caching
@@ -128,7 +129,7 @@ The hash includes:
 
 - the bytes of the script source
 - the directives calculated between script source and command-line flags
-- bytes of any files in the file specified by `--root`
+- bytes of any files in the file specified by `--build-root`
 
 ## Shell mode
 
@@ -185,3 +186,14 @@ For example:
   "runtime_inputs": []
 }
 ```
+
+## Runtime Variables
+
+*status: partially defined* (and partially implemented)
+
+We set some environment variables that the script can access at runtime:
+
+| Variable             | Meaning                                                                                                            |
+|----------------------|--------------------------------------------------------------------------------------------------------------------|
+| `RUNTIME_FILES_ROOT` | If `#!runtimeFiles` or `--runtime-files` was specified, this is set to where we put them.                          |
+| `SCRIPT_FILE`        | the name of the script as originally invoked (name is awkward but remains for compatibility with nix-script 1.0.0) |

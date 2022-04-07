@@ -95,4 +95,13 @@ mod io_behavior {
             .assert()
             .success();
     }
+
+    #[test]
+    fn include_runtime_file() {
+        bin()
+            .arg("tests/with_runtime_file/script.sh")
+            .assert()
+            .success()
+            .stdout("Hello, World!\n");
+    }
 }

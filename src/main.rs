@@ -5,6 +5,7 @@ mod directives;
 mod expr;
 
 use crate::builder::Builder;
+use crate::directives::Directives;
 use anyhow::{Context, Result};
 use clap::Parser;
 use clean_path::clean_path;
@@ -12,7 +13,7 @@ use std::fs;
 use std::io::ErrorKind;
 use std::os::unix::fs::symlink;
 use std::os::unix::process::ExitStatusExt;
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 use std::process::{Command, ExitStatus};
 
 // TODO: options for the rest of the directives
@@ -45,7 +46,11 @@ struct Opts {
     /// to bring other files into scope in your build. If there is a `default.nix`
     /// file in the specified root, we will use that instead of generating our own.
     #[clap(long)]
-    root: Option<PathBuf>,
+    build_root: Option<PathBuf>,
+
+    /// Include files for use at runtime (relative to the build root)
+    #[clap(long)]
+    runtime_files: Vec<PathBuf>,
 
     /// Where should we cache files?
     #[clap(long("cache-directory"), env("NIX_SCRIPT_CACHE"))]
@@ -76,20 +81,45 @@ impl Opts {
             .to_str()
             .context("filename was not valid UTF-8")?;
 
-        let mut builder = if let Some(root) = &self.root {
-            Builder::from_directory(root, &script)
+        // Parse our directives, but don't combine them with command-line arguments yet!
+        let mut directives = Directives::from_file(&self.indicator, &script)
+            .context("could not parse directives from script")?;
+
+        let mut build_root = self.build_root.to_owned();
+        if build_root.is_none() {
+            if let Some(from_directives) = &directives.build_root {
+                let out = script
+                    .parent()
+                    .map(Path::to_path_buf)
+                    .unwrap_or_else(|| PathBuf::from("."));
+
+                out.join(from_directives)
+                    .canonicalize()
+                    .context("could not canonicalize final path to build root")?;
+
+                log::debug!("path to root from script directive: {}", out.display());
+
+                build_root = Some(out);
+            }
+        };
+        if build_root.is_none()
+            && (!self.runtime_files.is_empty() || !directives.runtime_files.is_empty())
+        {
+            log::warn!("Requested runtime files without specifying a build root. I'm assuming it's the parent directory of the script for now, but you should set it explicitly!");
+            build_root = Some(
+                script
+                    .parent()
+                    .map(|p| p.to_owned())
+                    .unwrap_or_else(|| PathBuf::from(".")),
+            );
+        }
+
+        let mut builder = if let Some(build_root) = &build_root {
+            Builder::from_directory(build_root, &script)
                 .context("could not initialize source in directory")?
         } else {
             Builder::from_script(&script)
         };
-
-        // Get our directives all combined from various sources
-        let mut directives = builder
-            .directives(&self.indicator)
-            .context("could not parse directives from script")?;
-
-        directives.maybe_override_build_command(&self.build_command);
-        directives.maybe_override_interpreter(&self.interpreter);
 
         // First place we might bail early: if a script just wants to parse
         // directives using our parser, we dump JSON and quit instead of running.
@@ -101,13 +131,21 @@ impl Opts {
             return Ok(ExitStatus::from_raw(0));
         }
 
+        // we don't merge command-line and script directives until now because
+        // we shouldn't provide them in the output of `--parse` without showing
+        // where each option came from. For now, we're assuming that people who
+        // write wrapper scripts know what they want to pass into `nix-script`.
+        directives.maybe_override_build_command(&self.build_command);
+        directives.maybe_override_interpreter(&self.interpreter);
+        directives.merge_runtime_files(&self.runtime_files);
+
         // Second place we can bail early: if someone wants the generated
         // derivation to do IFD or similar
         if self.export {
             // We check here instead of inside while isolating the script or
             // similar so we can get an early bail that doesn't create trash
             // in the system's temporary directories.
-            if self.root.is_none() {
+            if build_root.is_none() {
                 anyhow::bail!(
                     "I don't have a root to refer to while exporting, so I can't isolate the script and dependencies. Specify a --root and try this again!"
                 )
