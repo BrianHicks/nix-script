@@ -102,6 +102,6 @@ mod io_behavior {
             .arg("tests/with_runtime_file/script.sh")
             .assert()
             .success()
-            .stdout("Hello, World!");
+            .stdout("Hello, World!\n");
     }
 }
