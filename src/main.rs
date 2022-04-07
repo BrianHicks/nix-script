@@ -13,7 +13,7 @@ use std::fs;
 use std::io::ErrorKind;
 use std::os::unix::fs::symlink;
 use std::os::unix::process::ExitStatusExt;
-use std::path::PathBuf;
+use std::path::{Component, Path, PathBuf};
 use std::process::{Command, ExitStatus};
 
 // TODO: options for the rest of the directives
@@ -84,7 +84,23 @@ impl Opts {
         directives.maybe_override_build_command(&self.build_command);
         directives.maybe_override_interpreter(&self.interpreter);
 
-        let root = self.root.as_ref().or(directives.root.as_ref());
+        let mut root = self.root.to_owned();
+        if root.is_none() {
+            if let Some(from_directives) = &directives.root {
+                let out = script
+                    .parent()
+                    .map(Path::to_path_buf)
+                    .unwrap_or_else(|| PathBuf::from("."));
+
+                out.join(from_directives)
+                    .canonicalize()
+                    .context("could not canonicalize final path to script root")?;
+
+                log::debug!("path to root from script directive: {}", out.display());
+
+                root = Some(out);
+            }
+        };
 
         let mut builder = if let Some(root) = &root {
             Builder::from_directory(root, &script)
