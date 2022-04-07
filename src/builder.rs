@@ -91,6 +91,9 @@ impl Builder {
         log::trace!("adding runtime inputs");
         derivation.add_runtime_inputs(directives.runtime_inputs.clone());
 
+        log::trace!("adding runtime files");
+        derivation.add_runtime_files(directives.runtime_files.clone());
+
         if let Some(interpreter) = &directives.interpreter {
             log::debug!("using interpreter from directives");
             derivation

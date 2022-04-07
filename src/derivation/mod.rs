@@ -22,6 +22,7 @@ pub struct Derivation {
 
     interpreter: Option<(String, Option<String>)>,
     runtime_inputs: BTreeSet<Expr>,
+    runtime_files: BTreeSet<PathBuf>,
 }
 
 impl Derivation {
@@ -48,6 +49,7 @@ impl Derivation {
             build_inputs: BTreeSet::new(),
             interpreter: None,
             runtime_inputs: BTreeSet::new(),
+            runtime_files: BTreeSet::new(),
         })
     }
 
@@ -98,6 +100,12 @@ impl Derivation {
             self.runtime_inputs.insert(runtime_input);
         }
     }
+
+    pub fn add_runtime_files(&mut self, runtime_files: Vec<PathBuf>) {
+        for runtime_file in runtime_files {
+            self.runtime_files.insert(runtime_file);
+        }
+    }
 }
 
 impl Display for Derivation {
@@ -142,42 +150,49 @@ impl Display for Derivation {
             "  installPhase = ''\n    mkdir -p $out\n    mv bin $out/bin"
         )?;
 
-        if self.interpreter.is_some() || !self.runtime_inputs.is_empty() {
-            write!(
-                f,
-                "\n\n    source ${{makeWrapper}}/nix-support/setup-hook\n    "
-            )?;
-
-            if let Some((command, maybe_args)) = &self.interpreter {
-                write!(
-                    f,
-                    "mv $out/bin/{} $out/bin/.{}\n    makeWrapper $(command -v {}) $out/bin/{} \\\n",
-                    self.name, self.name, command, self.name
-                )?;
-
-                if let Some(args) = maybe_args {
-                    write!(
-                        f,
-                        "        --add-flags \"{} $out/bin/.{}\" ",
-                        args, self.name
-                    )?
-                } else {
-                    write!(f, "        --add-flags \"$out/bin/.{}\"", self.name)?;
-                }
-            } else {
-                write!(
-                    f,
-                    "makeWrapper $out/bin/{} --argv0 {}",
-                    self.name, self.name
-                )?
-            }
-
-            if !self.runtime_inputs.is_empty() {
-                write!(f, " \\\n        --prefix PATH : ${{pkgs.lib.makeBinPath ")?;
-                fmt_list(f, &self.runtime_inputs)?;
-                write!(f, "}}")?;
+        if !self.runtime_files.is_empty() {
+            let target: PathBuf = ["$out", "usr", "share", &self.name].iter().collect();
+            write!(f, "\n\n    mkdir {}", target.display())?;
+            for file in &self.runtime_files {
+                write!(f, "\n    mv {} {}", &file.display(), target.display())?;
             }
         }
+
+        write!(
+            f,
+            "\n\n    source ${{makeWrapper}}/nix-support/setup-hook\n    "
+        )?;
+
+        if let Some((command, maybe_args)) = &self.interpreter {
+            write!(
+                f,
+                "mv $out/bin/{} $out/bin/.{}\n    makeWrapper $(command -v {}) $out/bin/{} \\\n",
+                self.name, self.name, command, self.name
+            )?;
+
+            if let Some(args) = maybe_args {
+                write!(
+                    f,
+                    "        --add-flags \"{} $out/bin/.{}\" ",
+                    args, self.name
+                )?
+            } else {
+                write!(f, "        --add-flags \"$out/bin/.{}\"", self.name)?;
+            }
+        } else {
+            write!(
+                f,
+                "wrapProgram $out/bin/{} --argv0 {}",
+                self.name, self.name
+            )?
+        }
+
+        if !self.runtime_inputs.is_empty() {
+            write!(f, " \\\n        --prefix PATH : ${{pkgs.lib.makeBinPath ")?;
+            fmt_list(f, &self.runtime_inputs)?;
+            write!(f, "}}")?;
+        }
+
         write!(f, "\n  '';\n")?;
 
         write!(f, "}}")
