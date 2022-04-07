@@ -138,6 +138,10 @@ impl Opts {
         let target = cache_directory.join(format!("{}-{}", hash, script_name));
         log::trace!("cache target: {}", target.display());
 
+        // before we perform the build, we need to check if the symlink target
+        // has gone stale. This can happen when you run `nix-collect-garbage`,
+        // since we don't pin the resulting derivations. We have to do things
+        // in a slightly less ergonomic way in order to not follow symlinks.
         if fs::symlink_metadata(&target).is_ok() {
             let link_target = fs::read_link(&target).context("failed to read existing symlink")?;
 
