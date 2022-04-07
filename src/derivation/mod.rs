@@ -187,6 +187,14 @@ impl Display for Derivation {
             )?
         }
 
+        if !self.runtime_files.is_empty() {
+            write!(
+                f,
+                " \\\n        --set RUNTIME_FILES_ROOT $out/usr/share/{}",
+                self.name
+            )?;
+        }
+
         if !self.runtime_inputs.is_empty() {
             write!(f, " \\\n        --prefix PATH : ${{pkgs.lib.makeBinPath ")?;
             fmt_list(f, &self.runtime_inputs)?;
