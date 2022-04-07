@@ -147,7 +147,7 @@ impl Opts {
 
             if !link_target.exists() {
                 log::info!("removing stale (garbage-collected?) symlink");
-                fs::remove_file(&target);
+                fs::remove_file(&target).context("could not remove stale symlink")?;
             }
         }
 
