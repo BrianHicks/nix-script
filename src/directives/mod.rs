@@ -14,6 +14,7 @@ pub struct Directives {
     pub build_inputs: Vec<Expr>,
     pub interpreter: Option<String>,
     pub runtime_inputs: Vec<Expr>,
+    pub runtime_files: Vec<PathBuf>,
 }
 
 impl Directives {
@@ -35,6 +36,7 @@ impl Directives {
         let build_inputs = Self::exprs("buildInputs", &fields)?;
         let interpreter = Self::once("interpreter", &fields)?.map(|s| s.to_owned());
         let runtime_inputs = Self::exprs("runtimeInputs", &fields)?;
+        let runtime_files = Self::files("runtimeFiles", &fields);
 
         Ok(Directives {
             build_command,
@@ -42,6 +44,7 @@ impl Directives {
             build_inputs,
             interpreter,
             runtime_inputs,
+            runtime_files,
         })
     }
 
@@ -70,6 +73,16 @@ impl Directives {
             Some(lines) => {
                 Expr::parse_as_list(&lines.join(" ")).context("could not parse runtime inputs")
             }
+        }
+    }
+
+    fn files<'field>(
+        field: &'field str,
+        fields: &HashMap<&'field str, Vec<&'field str>>,
+    ) -> Vec<PathBuf> {
+        match fields.get(field) {
+            None => Vec::new(),
+            Some(lines) => lines.join(" ").split(" ").map(PathBuf::from).collect(),
         }
     }
 
@@ -106,6 +119,10 @@ impl Hash for Directives {
 
         if let Some(build_root) = &self.build_root {
             hasher.write(build_root.display().to_string().as_ref())
+        }
+
+        for file in &self.runtime_files {
+            hasher.write(file.display().to_string().as_ref())
         }
     }
 }
@@ -191,6 +208,22 @@ mod tests {
 
             assert_eq!(Some(PathBuf::from(".")), directives.build_root)
         }
+
+        #[test]
+        fn combines_runtime_files() {
+            let directives =
+                Directives::from_directives(HashMap::from([("runtimeFiles", vec!["a b", "c d"])]))
+                    .unwrap();
+
+            let expected = vec![
+                PathBuf::from("a"),
+                PathBuf::from("b"),
+                PathBuf::from("c"),
+                PathBuf::from("d"),
+            ];
+
+            assert_eq!(expected, directives.runtime_files);
+        }
     }
 
     mod hash {
@@ -247,6 +280,14 @@ mod tests {
             assert_have_different_hashes(
                 Directives::from_directives(HashMap::from([("buildRoot", vec!["a"])])).unwrap(),
                 Directives::from_directives(HashMap::from([("buildRoot", vec!["b"])])).unwrap(),
+            )
+        }
+
+        #[test]
+        fn runtime_files_change_hash() {
+            assert_have_different_hashes(
+                Directives::from_directives(HashMap::from([("runtimeFiles", vec!["a"])])).unwrap(),
+                Directives::from_directives(HashMap::from([("runtimeFiles", vec!["b"])])).unwrap(),
             )
         }
     }
