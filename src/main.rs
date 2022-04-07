@@ -81,14 +81,9 @@ impl Opts {
             .to_str()
             .context("filename was not valid UTF-8")?;
 
-        // Get our directives all combined from various sources
+        // Parse our directives, but don't combine them with command-line arguments yet!
         let mut directives = Directives::from_file(&self.indicator, &script)
             .context("could not parse directives from script")?;
-
-        // TODO: do we need build root here?
-        directives.maybe_override_build_command(&self.build_command);
-        directives.maybe_override_interpreter(&self.interpreter);
-        directives.merge_runtime_files(&self.runtime_files);
 
         let mut build_root = self.build_root.to_owned();
         if build_root.is_none() {
@@ -124,6 +119,14 @@ impl Opts {
             );
             return Ok(ExitStatus::from_raw(0));
         }
+
+        // we don't merge command-line and script directives until now because
+        // we shouldn't provide them in the output of `--parse` without showing
+        // where each option came from. For now, we're assuming that people who
+        // write wrapper scripts know what they want to pass into `nix-script`.
+        directives.maybe_override_build_command(&self.build_command);
+        directives.maybe_override_interpreter(&self.interpreter);
+        directives.merge_runtime_files(&self.runtime_files);
 
         // Second place we can bail early: if someone wants the generated
         // derivation to do IFD or similar
