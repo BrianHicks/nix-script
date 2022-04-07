@@ -2,9 +2,7 @@
 #!buildRoot .
 #!build cp $SRC $OUT
 #!interpreter bash
-#!runtimeInputs coreutils
 #!runtimeFiles message
-set -exuo pipefail
+set -euo pipefail
 
-HERE="$(dirname "$(realpath $0)")"
-cat $HERE/message
+cat "$RUNTIME_FILES_ROOT/message"
