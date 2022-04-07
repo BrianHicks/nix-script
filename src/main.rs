@@ -130,11 +130,11 @@ impl Opts {
             cache_directory.display()
         );
 
+        // create hash, check cache
         let hash = builder
             .hash(&directives)
             .context("could not calculate cache location for the script's compiled version")?;
 
-        // create hash, check cache
         let target = cache_directory.join(format!("{}-{}", hash, script_name));
         log::trace!("cache target: {}", target.display());
 
