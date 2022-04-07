@@ -8,6 +8,7 @@ use crate::builder::Builder;
 use anyhow::{Context, Result};
 use clap::Parser;
 use clean_path::clean_path;
+use std::fs;
 use std::io::ErrorKind;
 use std::os::unix::fs::symlink;
 use std::os::unix::process::ExitStatusExt;
@@ -136,6 +137,18 @@ impl Opts {
         // create hash, check cache
         let target = cache_directory.join(format!("{}-{}", hash, script_name));
         log::trace!("cache target: {}", target.display());
+
+        if fs::symlink_metadata(&target).is_ok() {
+            match fs::read_link(&target) {
+                Ok(link) => {
+                    if !link.exists() {
+                        log::info!("removing stale (garbage-collected?) symlink");
+                        fs::remove_file(&target);
+                    }
+                }
+                Err(err) => return Err(err).context("failed to read existing symlink"),
+            }
+        }
 
         if !target.exists() {
             log::debug!("hashed path does not exist; building");
