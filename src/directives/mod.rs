@@ -46,7 +46,7 @@ impl Directives {
         let interpreter = match fields.get("interpreter") {
             Some(value) => {
                 if value.len() != 1 {
-                    anyhow::bail!("I got multiple interpreter directives, and I don't known which to use. Remove all but one and try agagin!");
+                    anyhow::bail!("I got multiple interpreter directives, and I don't know which to use. Remove all but one and try again!");
                 }
 
                 Some(value[0].to_owned())
