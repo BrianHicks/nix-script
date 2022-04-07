@@ -102,3 +102,58 @@ impl Hash for Directives {
         }
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    mod hash {
+        use super::*;
+
+        use std::collections::hash_map::DefaultHasher;
+        use std::hash::{Hash, Hasher};
+
+        fn assert_have_different_hashes<H: Hash>(l: H, r: H) {
+            let mut l_hasher = DefaultHasher::new();
+            let mut r_hasher = DefaultHasher::new();
+
+            l.hash(&mut l_hasher);
+            r.hash(&mut r_hasher);
+
+            println!("l: {}, r: {}", l_hasher.finish(), r_hasher.finish());
+            assert!(l_hasher.finish() != r_hasher.finish())
+        }
+
+        #[test]
+        fn build_command_changes_hash() {
+            assert_have_different_hashes(
+                Directives::from_directives(HashMap::from([("build", vec!["a"])])).unwrap(),
+                Directives::from_directives(HashMap::from([("build", vec!["b"])])).unwrap(),
+            )
+        }
+
+        #[test]
+        fn build_inputs_changes_hash() {
+            assert_have_different_hashes(
+                Directives::from_directives(HashMap::from([("buildInputs", vec!["a"])])).unwrap(),
+                Directives::from_directives(HashMap::from([("buildInputs", vec!["b"])])).unwrap(),
+            )
+        }
+
+        #[test]
+        fn interpreter_changes_hash() {
+            assert_have_different_hashes(
+                Directives::from_directives(HashMap::from([("interpreter", vec!["a"])])).unwrap(),
+                Directives::from_directives(HashMap::from([("interpreter", vec!["b"])])).unwrap(),
+            )
+        }
+
+        #[test]
+        fn runtime_inputs_changes_hash() {
+            assert_have_different_hashes(
+                Directives::from_directives(HashMap::from([("runtimeInputs", vec!["a"])])).unwrap(),
+                Directives::from_directives(HashMap::from([("runtimeInputs", vec!["b"])])).unwrap(),
+            )
+        }
+    }
+}
