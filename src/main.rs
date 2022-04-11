@@ -29,6 +29,10 @@ struct Opts {
     #[clap(long)]
     build_command: Option<String>,
 
+    /// Add build inputs to those specified by the source directives.
+    #[clap(long("build-input"))]
+    build_inputs: Vec<String>,
+
     #[clap(long("interpreter"))]
     interpreter: Option<String>,
 
@@ -136,6 +140,9 @@ impl Opts {
         // where each option came from. For now, we're assuming that people who
         // write wrapper scripts know what they want to pass into `nix-script`.
         directives.maybe_override_build_command(&self.build_command);
+        directives
+            .merge_build_inputs(&self.build_inputs)
+            .context("could not add build inputs provided on the command line")?;
         directives.maybe_override_interpreter(&self.interpreter);
         directives.merge_runtime_files(&self.runtime_files);
 
