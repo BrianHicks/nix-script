@@ -64,7 +64,7 @@ pkgs.stdenv.mkDerivation {
 }
 ```
 
-You can also control these settings with flags (e.g. `nix-script --runtime-inputs jq`.)
+You can also control these settings with flags (e.g. `nix-script --build-command ...`) or add to the directives specified in the source (e.g. `nix-script --runtime-input ...`.)
 Command-line arguments always take precedence, then shebangs.
 
 ### Keys Accepted
