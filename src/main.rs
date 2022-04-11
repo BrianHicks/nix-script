@@ -36,6 +36,10 @@ struct Opts {
     #[clap(long("interpreter"))]
     interpreter: Option<String>,
 
+    /// Add runtime inputs to those specified by the source directives.
+    #[clap(long("runtime-input"))]
+    runtime_inputs: Vec<String>,
+
     /// Instead of executing the script, parse directives from the file and
     /// print them as JSON to stdout
     #[clap(long("parse"), conflicts_with("export"))]
@@ -144,6 +148,9 @@ impl Opts {
             .merge_build_inputs(&self.build_inputs)
             .context("could not add build inputs provided on the command line")?;
         directives.maybe_override_interpreter(&self.interpreter);
+        directives
+            .merge_runtime_inputs(&self.runtime_inputs)
+            .context("could not add runtime inputs provided on the command line")?;
         directives.merge_runtime_files(&self.runtime_files);
 
         // Second place we can bail early: if someone wants the generated
