@@ -110,6 +110,18 @@ impl Directives {
         }
     }
 
+    pub fn merge_runtime_inputs(&mut self, new: &[String]) -> Result<()> {
+        for item in new {
+            let parsed = Expr::parse(item).context("could not parse build input")?;
+
+            if !self.runtime_inputs.contains(&parsed) {
+                self.runtime_inputs.push(parsed)
+            }
+        }
+
+        Ok(())
+    }
+
     pub fn merge_runtime_files(&mut self, new: &[PathBuf]) {
         for item in new {
             if !self.runtime_files.contains(item) {
