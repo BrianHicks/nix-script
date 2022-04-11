@@ -104,4 +104,20 @@ mod io_behavior {
             .success()
             .stdout("Hello, World!\n");
     }
+
+    #[test]
+    fn add_build_command_and_interpreter() {
+        // this test the things we'll need to do for nix-script-bash, just to
+        // make sure we don't break it!
+        bin()
+            .arg("--build-command")
+            .arg("cp $SRC $OUT")
+            .arg("--interpreter")
+            .arg("bash")
+            .arg("tests/nix-script-bash-target.sh")
+            //
+            .assert()
+            .success()
+            .stdout("Hello, World!\n");
+    }
 }
