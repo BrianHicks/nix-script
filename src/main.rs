@@ -26,7 +26,7 @@ struct Opts {
 
     /// How should we build this script? (Will override any `#!build` line
     /// present in the script.)
-    #[clap(long("build"))]
+    #[clap(long)]
     build_command: Option<String>,
 
     #[clap(long("interpreter"))]
