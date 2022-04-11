@@ -147,7 +147,7 @@ impl Opts {
             // in the system's temporary directories.
             if build_root.is_none() {
                 anyhow::bail!(
-                    "I don't have a root to refer to while exporting, so I can't isolate the script and dependencies. Specify a --root and try this again!"
+                    "I don't have a root to refer to while exporting, so I can't isolate the script and dependencies. Specify a --build-root and try this again!"
                 )
             }
 
