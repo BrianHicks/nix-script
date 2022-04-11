@@ -92,10 +92,34 @@ impl Directives {
         }
     }
 
+    pub fn merge_build_inputs(&mut self, new: &[String]) -> Result<()> {
+        for item in new {
+            let parsed = Expr::parse(item).context("could not parse build input")?;
+
+            if !self.build_inputs.contains(&parsed) {
+                self.build_inputs.push(parsed)
+            }
+        }
+
+        Ok(())
+    }
+
     pub fn maybe_override_interpreter(&mut self, maybe_new: &Option<String>) {
         if maybe_new.is_some() {
             self.interpreter = maybe_new.to_owned()
         }
+    }
+
+    pub fn merge_runtime_inputs(&mut self, new: &[String]) -> Result<()> {
+        for item in new {
+            let parsed = Expr::parse(item).context("could not parse build input")?;
+
+            if !self.runtime_inputs.contains(&parsed) {
+                self.runtime_inputs.push(parsed)
+            }
+        }
+
+        Ok(())
     }
 
     pub fn merge_runtime_files(&mut self, new: &[PathBuf]) {

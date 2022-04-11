@@ -26,11 +26,19 @@ struct Opts {
 
     /// How should we build this script? (Will override any `#!build` line
     /// present in the script.)
-    #[clap(long("build"))]
+    #[clap(long)]
     build_command: Option<String>,
+
+    /// Add build inputs to those specified by the source directives.
+    #[clap(long("build-input"))]
+    build_inputs: Vec<String>,
 
     #[clap(long("interpreter"))]
     interpreter: Option<String>,
+
+    /// Add runtime inputs to those specified by the source directives.
+    #[clap(long("runtime-input"))]
+    runtime_inputs: Vec<String>,
 
     /// Instead of executing the script, parse directives from the file and
     /// print them as JSON to stdout
@@ -136,7 +144,13 @@ impl Opts {
         // where each option came from. For now, we're assuming that people who
         // write wrapper scripts know what they want to pass into `nix-script`.
         directives.maybe_override_build_command(&self.build_command);
+        directives
+            .merge_build_inputs(&self.build_inputs)
+            .context("could not add build inputs provided on the command line")?;
         directives.maybe_override_interpreter(&self.interpreter);
+        directives
+            .merge_runtime_inputs(&self.runtime_inputs)
+            .context("could not add runtime inputs provided on the command line")?;
         directives.merge_runtime_files(&self.runtime_files);
 
         // Second place we can bail early: if someone wants the generated
@@ -147,7 +161,7 @@ impl Opts {
             // in the system's temporary directories.
             if build_root.is_none() {
                 anyhow::bail!(
-                    "I don't have a root to refer to while exporting, so I can't isolate the script and dependencies. Specify a --root and try this again!"
+                    "I don't have a root to refer to while exporting, so I can't isolate the script and dependencies. Specify a --build-root and try this again!"
                 )
             }
 
