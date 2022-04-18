@@ -42,13 +42,21 @@ struct Opts {
 
     /// Instead of executing the script, parse directives from the file and
     /// print them as JSON to stdout
-    #[clap(long("parse"), conflicts_with("export"))]
+    #[clap(long("parse"), conflicts_with_all(&["export", "shell"]))]
     parse: bool,
 
     /// Instead of executing the script, print the derivation we'd build
     /// to stdout
-    #[clap(long("export"), conflicts_with("parse"))]
+    #[clap(long("export"), conflicts_with_all(&["parse", "shell"]))]
     export: bool,
+
+    /// Enter a shell with the build-time and runtime inputs available.
+    #[clap(long, conflicts_with_all(&["parse", "export"]))]
+    shell: bool,
+
+    /// In shell mode, run this command instead of a shell.
+    #[clap(long, requires("shell"))]
+    run: Option<String>,
 
     /// Use this folder as the root for any building we do. You can use this
     /// to bring other files into scope in your build. If there is a `default.nix`
