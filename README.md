@@ -65,6 +65,14 @@ If you put that (or any `default.nix`) inside the directory specified in `#!buil
 
 Once you get to the point of having a fully-realized directory with a `default.nix` inside, you've arrived at a "real" derivation, and you can then use any Nix tooling you like to further modify your project.
 
+#### Parsing Directives
+
+If you are making a wrapper script for a new language, you can also use `--build-root` to hold package manager files and extremely custom `build.nix` files.
+We also provide a `--parse` flag which will ask `nix-script` to parse any directives in the script and give them to you as JSON on stdout.
+
+**Caution:** be aware that the format here is not stable yet and may change in backwards-incompatible ways without a corresponding major version bump in nix-script.
+If you have any feedback on the data returned by `--parse`, please open an issue!
+
 ### `nix-script-bash`
 
 `nix-script-bash` exists to let you specify exact versions of your dependencies via Nix.
