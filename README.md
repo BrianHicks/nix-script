@@ -51,6 +51,20 @@ If your language ecosystem has some common watcher script, it might be nice to a
 (For example, `nix-script-haskell` has a `--ghcid` flag for this purpose.
 See the source for how it's set up!)
 
+#### Exporting, or How To Grow a Script
+
+In nix-script version 1, it was common to run up against the limits of a single file, whether that meant having namespace issues or simply a single file becoming unwieldy.
+Getting aroung this commonly meant giving up on all the nice things that nix-script provided (like faster feedback loops and transparent compilation caching) so it was a tough tradeoff.
+
+Nix-script version 2 has two new flags to help with this: `--build-root` and `--export`.
+Once you get to the point in your program's life cycle where you need multiple files, tell nix-script where the project root is with `#!buildRoot` (or `--build-root`) and we'll include all the files in that directory during builds.
+This lets you do things like splitting out your source into multiple files, all of which will be checked when we try to determine whether or not we have a cache hit.
+
+Once even that is not enough, you can include `--export` in your nix-script invocation to print out the `default.nix` that we would have used to build your script.
+If you put that (or any `default.nix`) inside the directory specified in `#!buildRoot`, we'll use that instead of generating our own.
+
+Once you get to the point of having a fully-realized directory with a `default.nix` inside, you've arrived at a "real" derivation, and you can then use any Nix tooling you like to further modify your project.
+
 ### `nix-script-bash`
 
 `nix-script-bash` exists to let you specify exact versions of your dependencies via Nix.
