@@ -123,7 +123,7 @@ When `nix-script` is invoked, the basic operation is to:
 
 ### Hash Calculation
 
-*status: defined*
+*status: implemented*
 
 The hash includes:
 
