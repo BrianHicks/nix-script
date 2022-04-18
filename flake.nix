@@ -32,6 +32,7 @@
             # rust
             pkgs.rustc
             pkgs.cargo
+            pkgs.cargo-edit
             pkgs.clippy
             pkgs.rustPackages.rustfmt
 
