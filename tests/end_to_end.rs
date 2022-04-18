@@ -145,4 +145,21 @@ mod io_behavior {
             .success()
             .stdout("Hello, Shell!\n");
     }
+
+    #[test]
+    fn shell_run_inputs() {
+        bin()
+            .arg("--runtime-input")
+            .arg("jq")
+            .arg("--shell")
+            .arg("--run")
+            .arg("echo '{\"message\": \"Hello, jq!\"}' | jq -r .message")
+            // exit with code 1 if we don't actually enter the shell
+            .arg("tests/exit-with-code.sh")
+            .arg("1")
+            //
+            .assert()
+            .success()
+            .stdout("Hello, jq!\n");
+    }
 }
