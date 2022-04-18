@@ -24,7 +24,7 @@ This project's CI also pushes Linux and macOS builds to [`nix-script.cachix.org`
 
 ### `nix-script`
 
-The normal `nix-script` invocation is controlled using shebang lines.
+The normal `nix-script` invocation is controlled using shebang lines (lines starting with `#!` by default, although you can change it to whatever you like with the `--indicator` flag.)
 Starting your file with `#!/usr/bin/env nix-script` makes these options available:
 
 | What?                                | Shebang line      | Notes                                                                             |
