@@ -21,7 +21,7 @@ Each section is tagged with done-ness and determined-ness, with one of these val
 
 ## Transformation to Derivations
 
-*status: partially implemented* (still needs to get to 100% coverage between directives and command-line flags)
+*status: implemented*
 
 `nix-script` parses extra shebang (`#!`) lines into arguments to `mkDerivation`.
 This set of shebangs, when placed in `cool-script`:
@@ -189,7 +189,7 @@ For example:
 
 ## Runtime Variables
 
-*status: partially defined* (and partially implemented)
+*status: implemented* (but this list may grow)
 
 We set some environment variables that the script can access at runtime:
 
