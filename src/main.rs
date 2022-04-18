@@ -91,6 +91,10 @@ impl Opts {
             .context("could not parse script and args")?;
         script = clean_path(&script).context("could not clean path to script")?;
 
+        if self.shell && !args.is_empty() {
+            log::warn!("you specified both `--shell` and script args. I'm going to ignore the args! Use `--run` if you want to run something in the shell immediately.");
+        }
+
         let script_name = script
             .file_name()
             .context("script did not have a file name")?
