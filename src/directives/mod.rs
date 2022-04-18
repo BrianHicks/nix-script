@@ -15,6 +15,7 @@ pub struct Directives {
     pub interpreter: Option<String>,
     pub runtime_inputs: Vec<Expr>,
     pub runtime_files: Vec<PathBuf>,
+    pub raw: HashMap<String, Vec<String>>,
 }
 
 impl Directives {
@@ -45,6 +46,10 @@ impl Directives {
             interpreter,
             runtime_inputs,
             runtime_files,
+            raw: fields
+                .iter()
+                .map(|(k, v)| (k.to_string(), v.iter().map(|s| s.to_string()).collect()))
+                .collect(),
         })
     }
 
@@ -255,6 +260,17 @@ mod tests {
             ];
 
             assert_eq!(expected, directives.runtime_files);
+        }
+
+        #[test]
+        fn includes_others_raw() {
+            let directives =
+                Directives::from_directives(HashMap::from([("other", vec!["other"])])).unwrap();
+
+            assert_eq!(
+                Some(&vec!["other".to_string()]),
+                directives.raw.get("other")
+            )
         }
     }
 
