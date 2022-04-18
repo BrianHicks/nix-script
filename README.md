@@ -85,8 +85,6 @@ For example:
 jq --help
 ```
 
-This is quicker than using `nix-shell` shebangs because the runtime environment calculation will be cached.
-
 ### `nix-script-haskell`
 
 `nix-script-haskell` is a convenience wrapper for Haskell scripts.
