@@ -22,8 +22,18 @@
           '';
         };
 
+        packages.nix-script-bash = pkgs.writeShellScriptBin "nix-script-bash" ''
+          exec ${packages.nix-script}/bin/nix-script \
+            --build-command 'cp $SRC $OUT' \
+            --interpreter bash \
+            "$@"
+        '';
+
         defaultPackage = packages.nix-script;
-        overlay = final: prev: { nix-script = packages.nix-script; };
+        overlay = final: prev: {
+          nix-script = packages.nix-script;
+          nix-script-bash = packages.nix-script-bash;
+        };
 
         devShell = pkgs.mkShell {
           NIX_PKGS = inputs.nixpkgs;
