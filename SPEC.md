@@ -82,7 +82,7 @@ Command-line arguments always take precedence, then shebangs.
 
 ### What about environment variables as inputs?
 
-*status: speculative*
+*status: defined*
 
 In `nix-script` version 1, we also accepted environment variables like `BUILD_COMMAND` and `RUNTIME_INPUTS`.
 These were mostly useful for writing wrapper scripts, but in `nix-script` version 2, we do that differently.
@@ -167,7 +167,7 @@ Wrapper scripts may also use `nix-script` to manage their own dependencies.
 
 ### Parsing shebangs
 
-*status: partially implemented* (schema not finalized)
+*status: partially implemented* (schema not finalized; breaking schema changes will not trigger a major version bump)
 
 To help writing wrapper scripts, `nix-script` also provides a way to extract the shebang lines from a source file.
 For example: `nix-script --parse $1` in the script above, assuming no other arguments existed.
@@ -177,13 +177,26 @@ For example:
 ```json
 {
   "build_command": "mv $SRC $SRC.hs; ghc -o $OUT $SRC.hs",
+  "build_root": null,
   "build_inputs": [
     {
       "raw": "haskellPackages.ghcWithPackages (ps: [ ps.text ])"
     }
   ],
   "interpreter": null,
-  "runtime_inputs": []
+  "runtime_inputs": [],
+  "runtime_files": [],
+  "raw": {
+    "buildInputs": [
+      "(haskellPackages.ghcWithPackages (ps: [ ps.text ]))"
+    ],
+    "/usr/bin/env": [
+      "nix-script"
+    ],
+    "build": [
+      "mv $SRC $SRC.hs; ghc -o $OUT $SRC.hs"
+    ]
+  }
 }
 ```
 

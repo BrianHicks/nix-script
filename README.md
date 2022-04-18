@@ -2,7 +2,7 @@
 
 `nix-script` lets you write quick scripts in compiled languages, transparently compile and cache them, and pull in whatever dependencies you need from the Nix ecosystem.
 
-This README is intended more as a reference, but I also wrote  [a blog post to explain what this is and why it exists](https://bytes.zone/posts/nix-script/).
+This README is intended more as a reference, but I also wrote [a blog post to explain what this is and why it exists](https://bytes.zone/posts/nix-script/).
 
 ## Installing
 
@@ -18,48 +18,60 @@ NB: This will only install `nix-script` itself. To install e.g. `nix-script-hask
 nix-env -f https://github.com/BrianHicks/nix-script/archive/main.tar.gz -iA packages.x86_64-linux.nix-script-haskell
 ```
 
-You probably should use [`niv`](https://github.com/nmattia/niv) or similar, though!
-Once you do, you can control the version of `nixpkgs` you use (see "[Controlling `nixpkgs` version](#controlling-nixpkgs-version)" below.)
-
-This project's CI also pushes Linux builds to [`nix-script.cachix.org`](https://app.cachix.org/cache/nix-script) automatically.
-I push macOS builds by hand when I remember.
-(But there is not a lot of code in this project; a full rebuild is not too painful!)
+This project's CI also pushes Linux and macOS builds to [`nix-script.cachix.org`](https://app.cachix.org/cache/nix-script) automatically.
 
 ## Commands
 
 ### `nix-script`
 
-The normal `nix-script` invocation is controlled using shebang lines.
+The normal `nix-script` invocation is controlled using shebang lines (lines starting with `#!` by default, although you can change it to whatever you like with the `--indicator` flag.)
 Starting your file with `#!/usr/bin/env nix-script` makes these options available:
 
-| What?                           | Shebang line      | Notes                                                                                                                                                                                                                           |
-|---------------------------------|-------------------|---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| Compile the script to a binary  | `#!build`         | The command specified here must read from `SCRIPT_FILE` and write to `OUT_FILE`                                                                                                                                                 |
-| Specify build-time dependencies | `#!buildInputs`   | This should be a space-separated list of Nix expressions. For example, you can get `ghc` by specifying `haskellPackages.ghc`                                                                                                    |
-| Specify runtime dependencies    | `#!runtimeInputs` | This should be a space-separated list of Nix expressions.                                                                                                                                                                       |
-| Use an alternative interpreter  | `#!interpreter`   | Useful for running non-compiled languages. The interpreter specified will be used in a new shebang line on the first line of the compiled program. (For example, if you specify `bash` the line will be `#!/usr/bin/env bash`.) |
+| What?                                | Shebang line      | Notes                                                                             |
+|--------------------------------------|-------------------|-----------------------------------------------------------------------------------|
+| Compile the script to a binary       | `#!build`         | The command specified here must read from `SCRIPT_FILE` and write to `OUT_FILE`   |
+| Use all files in the given directory | `#!buildRoot`     | Must be a parent directory of the script                                          |
+| Specify build-time dependencies      | `#!buildInputs`   | A space-separated list of Nix expressions                                         |
+| Use an alternative interpreter       | `#!interpreter`   | Run this script with the given binary (must be in `runtimeInputs`)                |
+| Specify runtime dependencies         | `#!runtimeInputs` | This should be a space-separated list of Nix expressions.                         |
+| Access auxillary files at runtime    | `#!runtimeFiles`  | Make these files available at runtime (at the path given in `RUNTIME_FILES_ROOT`) |
 
-You can also control these options via environment variables in wrapper scripts (see the source of `nix-script-haskell/nix-script-haskell.sh` for an example.)
-
-| Shebang line      | Environment variable |
-|-------------------|----------------------|
-| `#!build`         | `BUILD_COMMAND`      |
-| `#!buildInputs`   | `BUILD_INPUTS`       |
-| `#!runtimeInputs` | `RUNTIME_INPUTS`     |
-| `#!interpreter`   | `INTERPRETER`        |
+you can also control these options with equivalent command-line flags to `nix-script` (see the `--help` output for exact names.)
 
 `nix-script` also lets your compiled script know where it came from by setting the `SCRIPT_FILE` environment variable to what you would have gotten in `$0` if it was a shell script.
 
 #### Shell Mode
 
 Building a new version for every change can get a little tiresome while developing.
-If you want a quicker feedback loop, you can invoke `nix-script` and friends like `nix-script --shell path/to/script` to drop into a development shell with your build- and runtime dependencies.
-This won't run your build command, but it will let you run it yourself, play around in repls, etc.
+If you want a quicker feedback loop, you can include `--shell` in your `nix-script` invocation (e.g. `nix-script --shell path/to/script`) to drop into a development shell with your build-time and runtime dependencies.
+This won't run your build command, but it will let you run it yourself, play around in REPLs, etc.
 
-If you are making a wrapper script, you may find the `SHELL_RUN` environment variable useful: it allows you to specify what command to run in the shell.
+If you are making a wrapper script, you may find the `--run` flag useful: it allows you to specify what command to run in the shell.
 If your language ecosystem has some common watcher script, it might be nice to add a special mode to your wrapper for it!
 (For example, `nix-script-haskell` has a `--ghcid` flag for this purpose.
 See the source for how it's set up!)
+
+#### Exporting, or How To Grow a Script
+
+In nix-script version 1, it was common to run up against the limits of a single file, whether that meant having namespace issues or simply a single file becoming unwieldy.
+Getting aroung this commonly meant giving up on all the nice things that nix-script provided (like faster feedback loops and transparent compilation caching) so it was a tough tradeoff.
+
+Nix-script version 2 has two new flags to help with this: `--build-root` and `--export`.
+Once you get to the point in your program's life cycle where you need multiple files, tell nix-script where the project root is with `#!buildRoot` (or `--build-root`) and we'll include all the files in that directory during builds.
+This lets you do things like splitting out your source into multiple files, all of which will be checked when we try to determine whether or not we have a cache hit.
+
+Once even that is not enough, you can include `--export` in your nix-script invocation to print out the `default.nix` that we would have used to build your script.
+If you put that (or any `default.nix`) inside the directory specified in `#!buildRoot`, we'll use that instead of generating our own.
+
+Once you get to the point of having a fully-realized directory with a `default.nix` inside, you've arrived at a "real" derivation, and you can then use any Nix tooling you like to further modify your project.
+
+#### Parsing Directives
+
+If you are making a wrapper script for a new language, you can also use `--build-root` to hold package manager files and extremely custom `build.nix` files.
+We also provide a `--parse` flag which will ask `nix-script` to parse any directives in the script and give them to you as JSON on stdout.
+
+**Caution:** be aware that the format here is not stable yet and may change in backwards-incompatible ways without a corresponding major version bump in nix-script.
+If you have any feedback on the data returned by `--parse`, please open an issue!
 
 ### `nix-script-bash`
 
@@ -72,8 +84,6 @@ For example:
 
 jq --help
 ```
-
-This is quicker than using `nix-shell` shebangs because the runtime environment calculation will be cached.
 
 ### `nix-script-haskell`
 
