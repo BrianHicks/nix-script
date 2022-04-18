@@ -135,7 +135,7 @@ The hash includes:
 
 *status: defined*
 
-You can get into a bash shell with all your script's build-time dependencies by calling `nix-script shell path-to-your-script`.
+You can get into a bash shell with all your script's build-time dependencies by calling `nix-script --shell path-to-your-script`.
 
 Shell mode implements many of the same command-line flags that `nix-shell` does.
 For example:
