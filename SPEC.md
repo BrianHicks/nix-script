@@ -133,7 +133,7 @@ The hash includes:
 
 ## Shell mode
 
-*status: defined*
+*status: implemented*
 
 You can get into a bash shell with all your script's build-time dependencies by calling `nix-script --shell path-to-your-script`.
 
@@ -141,10 +141,10 @@ Shell mode implements many of the same command-line flags that `nix-shell` does.
 For example:
 
 - `--packages / -p PACKAGES...` to include the specified packages in the shel
-- `--command CMD` to run an interactive shell
-- `--run CMD` to run a non-interactive process
+- `--run CMD` to run a command in the shell
+- `--pure` to do the equivalent of `nix-shell --pure` (that is: ignore your `PATH` and some other things)
 
-Run `nix-script shell --help` to see the full set of commands.
+Run `nix-script --help` to see the full set of commands.
 
 ## Wrapper Scripts
 
