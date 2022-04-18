@@ -58,6 +58,11 @@ struct Opts {
     #[clap(long, requires("shell"))]
     run: Option<String>,
 
+    /// In shell mode, run a "pure" shell (that is, one that isolates the
+    /// shell a little more from what you have in your environment.)
+    #[clap(long, requires("shell"))]
+    pure: bool,
+
     /// Use this folder as the root for any building we do. You can use this
     /// to bring other files into scope in your build. If there is a `default.nix`
     /// file in the specified root, we will use that instead of generating our own.
@@ -290,6 +295,11 @@ impl Opts {
 
         log::trace!("setting SCRIPT_FILE to `{}`", script_file.display());
         command.env("SCRIPT_FILE", script_file);
+
+        if self.pure {
+            log::trace!("setting shell to pure mode");
+            command.arg("--pure");
+        }
 
         for input in &directives.build_inputs {
             log::trace!("adding build input `{}` to packages", input);

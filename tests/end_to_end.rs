@@ -152,6 +152,7 @@ mod io_behavior {
             .arg("--runtime-input")
             .arg("jq")
             .arg("--shell")
+            .arg("--pure")
             .arg("--run")
             .arg("echo '{\"message\": \"Hello, jq!\"}' | jq -r .message")
             // exit with code 1 if we don't actually enter the shell
