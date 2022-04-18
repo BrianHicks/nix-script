@@ -42,13 +42,26 @@ struct Opts {
 
     /// Instead of executing the script, parse directives from the file and
     /// print them as JSON to stdout
-    #[clap(long("parse"), conflicts_with("export"))]
+    #[clap(long("parse"), conflicts_with_all(&["export", "shell"]))]
     parse: bool,
 
     /// Instead of executing the script, print the derivation we'd build
     /// to stdout
-    #[clap(long("export"), conflicts_with("parse"))]
+    #[clap(long("export"), conflicts_with_all(&["parse", "shell"]))]
     export: bool,
+
+    /// Enter a shell with the build-time and runtime inputs available.
+    #[clap(long, conflicts_with_all(&["parse", "export"]))]
+    shell: bool,
+
+    /// In shell mode, run this command instead of a shell.
+    #[clap(long, requires("shell"))]
+    run: Option<String>,
+
+    /// In shell mode, run a "pure" shell (that is, one that isolates the
+    /// shell a little more from what you have in your environment.)
+    #[clap(long, requires("shell"))]
+    pure: bool,
 
     /// Use this folder as the root for any building we do. You can use this
     /// to bring other files into scope in your build. If there is a `default.nix`
@@ -82,6 +95,10 @@ impl Opts {
             .parse_script_and_args()
             .context("could not parse script and args")?;
         script = clean_path(&script).context("could not clean path to script")?;
+
+        if self.shell && !args.is_empty() {
+            log::warn!("you specified both `--shell` and script args. I'm going to ignore the args! Use `--run` if you want to run something in the shell immediately.");
+        }
 
         let script_name = script
             .file_name()
@@ -153,7 +170,13 @@ impl Opts {
             .context("could not add runtime inputs provided on the command line")?;
         directives.merge_runtime_files(&self.runtime_files);
 
-        // Second place we can bail early: if someone wants the generated
+        // Second place we might bail early: if we're requesting a shell instead
+        // of building and running the script.
+        if self.shell {
+            return self.run_shell(script, &directives);
+        }
+
+        // Third place we can bail early: if someone wants the generated
         // derivation to do IFD or similar
         if self.export {
             // We check here instead of inside while isolating the script or
@@ -263,6 +286,41 @@ impl Opts {
         }
 
         Ok(target)
+    }
+
+    fn run_shell(&self, script_file: PathBuf, directives: &Directives) -> Result<ExitStatus> {
+        log::debug!("entering shell mode");
+
+        let mut command = Command::new("nix-shell");
+
+        log::trace!("setting SCRIPT_FILE to `{}`", script_file.display());
+        command.env("SCRIPT_FILE", script_file);
+
+        if self.pure {
+            log::trace!("setting shell to pure mode");
+            command.arg("--pure");
+        }
+
+        for input in &directives.build_inputs {
+            log::trace!("adding build input `{}` to packages", input);
+            command.arg("-p").arg(input.to_string());
+        }
+
+        for input in &directives.runtime_inputs {
+            log::trace!("adding runtime input `{}` to packages", input);
+            command.arg("-p").arg(input.to_string());
+        }
+
+        if let Some(run) = &self.run {
+            log::trace!("running `{}`", run);
+            command.arg("--run").arg(run);
+        }
+
+        command
+            .spawn()
+            .context("could not start nix-shell")?
+            .wait()
+            .context("could not start the shell")
     }
 }
 
