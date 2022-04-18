@@ -177,13 +177,26 @@ For example:
 ```json
 {
   "build_command": "mv $SRC $SRC.hs; ghc -o $OUT $SRC.hs",
+  "build_root": null,
   "build_inputs": [
     {
       "raw": "haskellPackages.ghcWithPackages (ps: [ ps.text ])"
     }
   ],
   "interpreter": null,
-  "runtime_inputs": []
+  "runtime_inputs": [],
+  "runtime_files": [],
+  "raw": {
+    "buildInputs": [
+      "(haskellPackages.ghcWithPackages (ps: [ ps.text ]))"
+    ],
+    "/usr/bin/env": [
+      "nix-script"
+    ],
+    "build": [
+      "mv $SRC $SRC.hs; ghc -o $OUT $SRC.hs"
+    ]
+  }
 }
 ```
 
