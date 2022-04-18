@@ -130,4 +130,19 @@ mod io_behavior {
             .success()
             .stdout("script-name.sh\n");
     }
+
+    #[test]
+    fn shell_run() {
+        bin()
+            .arg("--shell")
+            .arg("--run")
+            .arg("echo 'Hello, Shell!'")
+            // exit with code 1 if we don't actually enter the shell
+            .arg("tests/exit-with-code.sh")
+            .arg("1")
+            //
+            .assert()
+            .success()
+            .stdout("Hello, Shell!\n");
+    }
 }
