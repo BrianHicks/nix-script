@@ -161,7 +161,13 @@ impl Opts {
             .context("could not add runtime inputs provided on the command line")?;
         directives.merge_runtime_files(&self.runtime_files);
 
-        // Second place we can bail early: if someone wants the generated
+        // Second place we might bail early: if we're requesting a shell instead
+        // of building and running the script.
+        if self.shell {
+            return self.run_shell(script, &directives);
+        }
+
+        // Third place we can bail early: if someone wants the generated
         // derivation to do IFD or similar
         if self.export {
             // We check here instead of inside while isolating the script or
@@ -271,6 +277,36 @@ impl Opts {
         }
 
         Ok(target)
+    }
+
+    fn run_shell(&self, script_file: PathBuf, directives: &Directives) -> Result<ExitStatus> {
+        log::debug!("entering shell mode");
+
+        let mut command = Command::new("nix-shell");
+
+        log::trace!("setting SCRIPT_FILE to `{}`", script_file.display());
+        command.env("SCRIPT_FILE", script_file);
+
+        for input in &directives.build_inputs {
+            log::trace!("adding build input `{}` to packages", input);
+            command.arg("-p").arg(input.to_string());
+        }
+
+        for input in &directives.runtime_inputs {
+            log::trace!("adding runtime input `{}` to packages", input);
+            command.arg("-p").arg(input.to_string());
+        }
+
+        if let Some(run) = &self.run {
+            log::trace!("running `{}`", run);
+            command.arg("--run").arg(run);
+        }
+
+        command
+            .spawn()
+            .context("could not start nix-shell")?
+            .wait()
+            .context("could not start the shell")
     }
 }
 
