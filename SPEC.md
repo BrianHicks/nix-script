@@ -167,7 +167,7 @@ Wrapper scripts may also use `nix-script` to manage their own dependencies.
 
 ### Parsing shebangs
 
-*status: partially implemented* (schema not finalized)
+*status: partially implemented* (schema not finalized; breaking schema changes will not trigger a major version bump)
 
 To help writing wrapper scripts, `nix-script` also provides a way to extract the shebang lines from a source file.
 For example: `nix-script --parse $1` in the script above, assuming no other arguments existed.
