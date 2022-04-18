@@ -189,7 +189,7 @@ For example:
 
 ## Runtime Variables
 
-*status: partially defined* (and partially implemented)
+*status: implemented* (but this list may grow)
 
 We set some environment variables that the script can access at runtime:
 

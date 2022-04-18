@@ -195,6 +195,8 @@ impl Display for Derivation {
             )?;
         }
 
+        write!(f, " \\\n        --set SCRIPT_FILE {}", self.name)?;
+
         if !self.runtime_inputs.is_empty() {
             write!(f, " \\\n        --prefix PATH : ${{pkgs.lib.makeBinPath ")?;
             fmt_list(f, &self.runtime_inputs)?;

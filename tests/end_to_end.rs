@@ -120,4 +120,14 @@ mod io_behavior {
             .success()
             .stdout("Hello, World!\n");
     }
+
+    #[test]
+    fn script_file() {
+        bin()
+            .arg("tests/script-name.sh")
+            //
+            .assert()
+            .success()
+            .stdout("script-name.sh\n");
+    }
 }
