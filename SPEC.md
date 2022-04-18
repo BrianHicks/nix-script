@@ -82,7 +82,7 @@ Command-line arguments always take precedence, then shebangs.
 
 ### What about environment variables as inputs?
 
-*status: speculative*
+*status: defined*
 
 In `nix-script` version 1, we also accepted environment variables like `BUILD_COMMAND` and `RUNTIME_INPUTS`.
 These were mostly useful for writing wrapper scripts, but in `nix-script` version 2, we do that differently.
