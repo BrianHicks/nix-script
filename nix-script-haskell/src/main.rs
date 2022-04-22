@@ -8,11 +8,11 @@ use std::process::{Command, ExitStatus};
 #[clap(version, trailing_var_arg = true)]
 struct Opts {
     /// Launch a ghcid session watching the script
-    #[clap(long)]
+    #[clap(long, conflicts_with("shell"))]
     ghcid: bool,
 
     /// Enter a shell with all script dependencies
-    #[clap(long)]
+    #[clap(long, conflicts_with("ghcid"))]
     shell: bool,
 
     /// In shell mode, run this command instead of a shell.
