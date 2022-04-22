@@ -1,6 +1,7 @@
-use anyhow::Result;
+use anyhow::{Context, Result};
 use clap::Parser;
-use std::process::{Command, ExitStatus};
+use std::path::PathBuf;
+use std::process::ExitStatus;
 
 /// Does the same thing as nix-script, but specializes some options for
 /// scripts written in Haskell.
@@ -31,7 +32,25 @@ struct Opts {
 
 impl Opts {
     fn run(&self) -> Result<ExitStatus> {
-        anyhow::bail!("no")
+        let (_script, _args) = self
+            .parse_script_and_args()
+            .context("could not parse script and args")?;
+
+        // TODO: parse haskellPackages
+
+        // TODO: run shell or ghcid
+
+        // TODO: run actual script
+        todo!("everything in nix-script-haskell")
+    }
+
+    fn parse_script_and_args(&self) -> Result<(PathBuf, Vec<String>)> {
+        log::trace!("parsing script and args");
+        let mut script_and_args = self.script_and_args.iter();
+
+        let script = PathBuf::from(script_and_args.next().context("I need at least a script name to run, but didn't get one. This represents an internal error, and you should open a bug!")?);
+
+        Ok((script, self.script_and_args[1..].to_vec()))
     }
 }
 
