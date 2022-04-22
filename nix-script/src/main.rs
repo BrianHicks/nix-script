@@ -1,3 +1,4 @@
+#[warn(clippy::cargo)]
 mod builder;
 mod clean_path;
 mod derivation;

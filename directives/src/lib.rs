@@ -1,3 +1,4 @@
+#[warn(clippy::cargo)]
 pub mod expr;
 mod parser;
 
