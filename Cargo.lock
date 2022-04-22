@@ -325,7 +325,6 @@ dependencies = [
  "path-absolutize",
  "rnix",
  "seahash",
- "serde",
  "serde_json",
  "tempfile",
  "walkdir",
