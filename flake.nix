@@ -11,6 +11,11 @@
         pkgs = import inputs.nixpkgs { inherit system; };
         naersk-lib = inputs.naersk.lib."${system}";
       in rec {
+        packages.nix-script-all = pkgs.symlinkJoin {
+          name = "nix-script-all";
+          paths = [ packages.nix-script packages.nix-script-bash ];
+        };
+
         packages.nix-script = naersk-lib.buildPackage rec {
           name = "nix-script";
           version = "2.0.0";
@@ -39,8 +44,10 @@
             "$@"
         '';
 
-        defaultPackage = packages.nix-script;
+        defaultPackage = packages.nix-script-all;
+
         overlay = final: prev: {
+          nix-script-all = packages.nix-script-all;
           nix-script = packages.nix-script;
           nix-script-bash = packages.nix-script-bash;
         };
