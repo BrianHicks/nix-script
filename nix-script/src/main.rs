@@ -1,14 +1,12 @@
 mod builder;
 mod clean_path;
 mod derivation;
-mod directives;
-mod expr;
 
 use crate::builder::Builder;
-use crate::directives::Directives;
 use anyhow::{Context, Result};
 use clap::Parser;
 use clean_path::clean_path;
+use directives::Directives;
 use std::fs;
 use std::io::ErrorKind;
 use std::os::unix::fs::symlink;

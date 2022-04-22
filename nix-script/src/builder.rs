@@ -1,7 +1,7 @@
 use crate::clean_path::clean_path;
 use crate::derivation::Derivation;
-use crate::directives::Directives;
 use anyhow::{Context, Result};
+use directives::Directives;
 use once_cell::unsync::OnceCell;
 use path_absolutize::Absolutize;
 use seahash::SeaHasher;
