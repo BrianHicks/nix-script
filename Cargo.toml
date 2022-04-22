@@ -1,5 +1,8 @@
 [workspace]
 members = [
+  "directives",
+
+  # binaries
   "nix-script",
   "nix-script-haskell",
 ]

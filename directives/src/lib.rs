@@ -1,3 +1,4 @@
+pub mod expr;
 mod parser;
 
 use crate::expr::Expr;

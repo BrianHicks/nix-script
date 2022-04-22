@@ -1,8 +1,8 @@
 mod inputs;
 
 use crate::clean_path::clean_path;
-use crate::expr::Expr;
 use anyhow::{Context, Result};
+use directives::expr::Expr;
 use inputs::Inputs;
 use std::collections::BTreeSet;
 use std::fmt::{self, Display};
@@ -233,7 +233,7 @@ mod tests {
 
     mod to_string {
         use super::*;
-        use crate::expr::Expr;
+        use directives::expr::Expr;
         use std::path::PathBuf;
 
         #[test]

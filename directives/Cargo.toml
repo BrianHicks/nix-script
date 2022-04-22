@@ -1,0 +1,10 @@
+[package]
+name = "directives"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+anyhow = "1.0.56"
+log = "0.4.16"
+rnix = "0.10.1"
+serde = { version = "1.0.136", features = [ "derive" ] }
