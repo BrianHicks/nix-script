@@ -12,9 +12,12 @@
         naersk-lib = inputs.naersk.lib."${system}";
       in rec {
         packages.nix-script = naersk-lib.buildPackage {
+          name = "nix-script";
+
           root = ./.;
 
           buildInputs = [ pkgs.clippy ];
+          target = [ "nix-script" ];
 
           doCheck = true;
           checkPhase = ''
