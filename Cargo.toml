@@ -1,2 +1,5 @@
 [workspace]
-members = ["nix-script"]
+members = [
+  "nix-script",
+  "nix-script-haskell",
+]
