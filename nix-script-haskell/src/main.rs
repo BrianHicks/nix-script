@@ -1,7 +1,8 @@
 use anyhow::{Context, Result};
 use clap::Parser;
+use directives::Directives;
 use std::path::PathBuf;
-use std::process::ExitStatus;
+use std::process::{Command, ExitStatus};
 
 /// Does the same thing as nix-script, but specializes some options for
 /// scripts written in Haskell.
@@ -32,16 +33,50 @@ struct Opts {
 
 impl Opts {
     fn run(&self) -> Result<ExitStatus> {
-        let (_script, _args) = self
+        let (script, args) = self
             .parse_script_and_args()
             .context("could not parse script and args")?;
 
-        // TODO: parse haskellPackages
+        let directives = Directives::from_file("#!", &script)
+            .context("could not parse directives from script")?;
 
-        // TODO: run shell or ghcid
+        let mut command = Command::new("nix-script");
 
-        // TODO: run actual script
-        todo!("everything in nix-script-haskell")
+        command
+            .arg("--build-command")
+            .arg("mv $SRC $SRC.hs; ghc -o $OUT $SRC.hs");
+
+        let mut compiler = format!(
+            "haskellPackages.ghcWithPackages (ps: [ {} ])",
+            directives
+                .raw
+                .get("haskellPackages")
+                .map(|ps| ps.join(" "))
+                .unwrap_or(String::default())
+        );
+        command.arg("--build-input").arg(compiler);
+
+        if self.shell {
+            log::debug!("entering shell mode");
+            command.arg("--shell");
+        } else if self.ghcid {
+            log::debug!("entering ghcid mode");
+            command
+                .arg("--shell")
+                .arg("--runtime-input")
+                .arg("ghcid")
+                .arg("--run")
+                .arg(format!("ghcid {}", script.display()));
+        }
+
+        command.arg(script);
+        command.args(args);
+
+        let mut child = command
+            .spawn()
+            .context("could not call nix-script. Is it on the PATH?")?;
+
+        child.wait().context("could not run the script")
     }
 
     fn parse_script_and_args(&self) -> Result<(PathBuf, Vec<String>)> {
