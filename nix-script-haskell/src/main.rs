@@ -46,7 +46,7 @@ impl Opts {
             .arg("--build-command")
             .arg("mv $SRC $SRC.hs; ghc -o $OUT $SRC.hs");
 
-        let mut compiler = format!(
+        let compiler = format!(
             "haskellPackages.ghcWithPackages (ps: [ {} ])",
             directives
                 .raw
