@@ -77,7 +77,8 @@ impl Opts {
             directives
                 .raw
                 .get("haskellPackages")
-                .map(|ps| ps.join(" ")).unwrap_or_default()
+                .map(|ps| ps.join(" "))
+                .unwrap_or_default()
         );
         log::debug!("compiler is `{}`", &compiler);
         command.arg("--build-input").arg(compiler);
