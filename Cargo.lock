@@ -187,18 +187,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "escargot"
-version = "0.5.7"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "f5584ba17d7ab26a8a7284f13e5bd196294dd2f2d79773cff29b9e9edef601a6"
-dependencies = [
- "log",
- "once_cell",
- "serde",
- "serde_json",
-]
-
-[[package]]
 name = "fastrand"
 version = "1.7.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -351,7 +339,6 @@ dependencies = [
  "clap",
  "directives",
  "env_logger",
- "escargot",
  "log",
 ]
 

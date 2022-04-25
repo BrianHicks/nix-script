@@ -1,21 +1,18 @@
 use assert_cmd::Command;
-use escargot::CargoBuild;
 use std::path::PathBuf;
 
 fn run_test<A>(asserter: A)
 where
     A: FnOnce(&mut Command),
 {
-    // CargoBuild::new()
-    //     .manifest_path("../nix-script/Cargo.toml")
-    //     .bin("nix-script")
-    //     .exec()
-    //     .unwrap();
-
     let nix_script_bin = PathBuf::from(env!("CARGO_BIN_EXE_nix-script-haskell"))
         .parent()
         .unwrap()
         .join("nix-script");
+
+    // `cargo test` should have automatically created this binary. If not,
+    // we'd better bail early!
+    assert!(nix_script_bin.exists());
 
     let mut command = Command::cargo_bin(env!("CARGO_BIN_EXE_nix-script-haskell")).unwrap();
 
