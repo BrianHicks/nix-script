@@ -363,10 +363,10 @@ struct TempBuildRoot {
 
 impl TempBuildRoot {
     fn new_in(root: &Path, hash: &str, script_name: &Path) -> Result<Self> {
-        log::trace!("creating temporary directory");
-
         let dest = root.join(format!("build-{}-{}", hash, script_name.display()));
         fs::create_dir_all(&dest).context("could not create temporary directory")?;
+
+        log::trace!("created temporary directory {}", dest.display());
 
         Ok(TempBuildRoot { dest })
     }
