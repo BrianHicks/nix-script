@@ -26,6 +26,9 @@ struct Opts {
     #[clap(long, requires("shell"))]
     pure: bool,
 
+    #[clap(long, default_value("nix-script"), hide(true))]
+    nix_script_bin: PathBuf,
+
     /// The script and args to pass to nix-script
     #[clap(min_values = 1, required = true)]
     script_and_args: Vec<String>,
@@ -40,7 +43,7 @@ impl Opts {
         let directives = Directives::from_file("#!", &script)
             .context("could not parse directives from script")?;
 
-        let mut command = Command::new("nix-script");
+        let mut command = Command::new(&self.nix_script_bin);
 
         let build_command = format!(
             "mv $SRC $SRC.hs; ghc {} -o $OUT $SRC.hs",
@@ -80,9 +83,12 @@ impl Opts {
         command.arg(script);
         command.args(args);
 
-        let mut child = command
-            .spawn()
-            .context("could not call nix-script. Is it on the PATH?")?;
+        let mut child = command.spawn().with_context(|| {
+            format!(
+                "could not call {}. Is it on the PATH?",
+                self.nix_script_bin.display()
+            )
+        })?;
 
         child.wait().context("could not run the script")
     }
