@@ -295,6 +295,7 @@ impl Source {
                     .context("I'm trying to build a script but have not created a temporary directory. This is an internal error and you should report it!")
                     .map(|temp| &temp.dest),
             Self::Directory { root, tempdir, .. } => if root.join("default.nix").exists() {
+                log::info!("a default.nix exists in the build directory, so we're using that instead of creating our own");
                 Ok(root)
             } else {
                 let target = tempdir
