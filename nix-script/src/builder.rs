@@ -134,7 +134,7 @@ impl Builder {
         log::trace!("building");
 
         let hash = self
-            .hash(&directives)
+            .hash(directives)
             .context("could not get a hash in order to isolate source for the build")?;
 
         self.source
