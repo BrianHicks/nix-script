@@ -32,6 +32,9 @@
               # attribute the same as the one in `nix-script/Cargo.toml`
               grep -q -e 'version = "${version}"' ${name}/Cargo.toml
             '';
+
+            copyBinsFilter = ''
+              select(.reason == "compiler-artifact" and .executable != null and .profile.test == false and .target.name == "${name}")'';
           };
       in rec {
         packages = {
