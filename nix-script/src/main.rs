@@ -268,7 +268,7 @@ impl Opts {
     }
 
     fn get_cache_directory(&self) -> Result<PathBuf> {
-        let target = match &self.cache_directory {
+        let mut target = match &self.cache_directory {
             Some(explicit) => explicit.to_owned(),
             None => {
                 let dirs = directories::ProjectDirs::from("zone", "bytes", "nix-script").context(
@@ -278,6 +278,10 @@ impl Opts {
                 dirs.cache_dir().to_owned()
             }
         };
+
+        if target.is_relative() {
+            target = std::env::current_dir().context("could not get the current directory to figure out an absolute path to the cache")?.join(target)
+        }
 
         if !target.exists() {
             log::trace!("creating cache directory");
