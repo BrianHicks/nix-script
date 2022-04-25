@@ -6,19 +6,30 @@ This README is intended more as a reference, but I also wrote [a blog post to ex
 
 ## Installing
 
-You might have guessed this already, but you can install this package with `nix`:
+You might have guessed this already, but you can install this package with `nix`!
+
+### Installing to Your Profile
 
 ```
 nix-env -if https://github.com/BrianHicks/nix-script/archive/main.tar.gz
 ```
 
-NB: This will only install `nix-script` itself. To install e.g. `nix-script-haskell`, use:
+This project's CI also pushes Linux and macOS builds to [`nix-script.cachix.org`](https://app.cachix.org/cache/nix-script) automatically, meaning `cachix add nix-script` should set you up to compile fewer things.
 
-```
-nix-env -f https://github.com/BrianHicks/nix-script/archive/main.tar.gz -iA packages.x86_64-linux.nix-script-haskell
-```
+### Installing with Flakes
 
-This project's CI also pushes Linux and macOS builds to [`nix-script.cachix.org`](https://app.cachix.org/cache/nix-script) automatically.
+Once added as a flake, we provide these attributes in `package`:
+
+- `nix-script-all` (the default package): contains everything below
+- `nix-script`: only `nix-script`
+- `nix-script-bash`: only `nix-script-bash`, but referencing the correct `nix-script`
+- `nix-script-haskell`: only `nix-script-haskell`, but referencing the correct `nix-script`
+
+We also provide an `overlay`, which has all of these.
+
+### Installing with Niv
+
+Once added to Niv (`niv add BrianHicks/nix-script`), you should have the same things described in the flakes section above.
 
 ## Commands
 
