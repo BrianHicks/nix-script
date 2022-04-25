@@ -42,9 +42,16 @@ impl Opts {
 
         let mut command = Command::new("nix-script");
 
-        command
-            .arg("--build-command")
-            .arg("mv $SRC $SRC.hs; ghc -o $OUT $SRC.hs");
+        let build_command = format!(
+            "mv $SRC $SRC.hs; ghc {} -o $OUT $SRC.hs",
+            directives
+                .raw
+                .get("ghcFlags")
+                .map(|ps| ps.join(" "))
+                .unwrap_or_else(|| String::from(" "))
+        );
+        log::debug!("build command is `{}`", build_command);
+        command.arg("--build-command").arg(build_command);
 
         let compiler = format!(
             "haskellPackages.ghcWithPackages (ps: with ps; [ {} ])",
