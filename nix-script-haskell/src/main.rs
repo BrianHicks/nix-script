@@ -47,7 +47,7 @@ impl Opts {
             .arg("mv $SRC $SRC.hs; ghc -o $OUT $SRC.hs");
 
         let compiler = format!(
-            "haskellPackages.ghcWithPackages (ps: [ {} ])",
+            "haskellPackages.ghcWithPackages (ps: with ps; [ {} ])",
             directives
                 .raw
                 .get("haskellPackages")
