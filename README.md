@@ -29,7 +29,7 @@ We also provide an `overlay`, which has all of these.
 
 ### Installing with Niv
 
-Once added to Niv (`niv add BrianHicks/nix-script`), you should be able to `import sources.nix-script { };` and have the same things described in the flakes section above.
+Once added to Niv (`niv add BrianHicks/nix-script`), you should be able to `import sources.nix-script { };` and have the same things described in the flakes section above, except you'll have to explicitly reference things like `overlay."${builtins.currentSystem}"`.
 
 ## Commands
 
