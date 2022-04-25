@@ -4,7 +4,7 @@ use std::path::PathBuf;
 
 fn run_test<A>(asserter: A)
 where
-    A: FnOnce(&mut Command) -> (),
+    A: FnOnce(&mut Command),
 {
     CargoBuild::new()
         .manifest_path("../nix-script/Cargo.toml")
