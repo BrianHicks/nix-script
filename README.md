@@ -99,23 +99,11 @@ You can get quick compilation feedback with [`ghcid`](https://github.com/ndmitch
 
 ## Controlling `nixpkgs` version
 
-By default, `nix-script` will use the version of [nixpkgs](https://github.com/nixos/nixpkgs) we use to build scripts it's installed with.
-If you want to change this, specify `pinnedPkgs` when installing `nix-script`.
-For example, if you use `niv` that might look like:
+`nix-script` will generate derivations that `import <nixpkgs> {}` by default.
+That means all you need to do to control which `nixpkgs` your scripts are built with is to set `NIX_PATH`, for example to `NIX_PATH=nixpkgs=/nix/store/HASHHASHHASH-source`.
+For projects, this is reasonably easy to do in a `mkShell` (for example by setting `NIX_PATH = "nixpkgs=${pkgs.path}"`,) or by using `makeWrapper` on `nix-script` in a custom derivation.
 
-```nix
-let
-  sources = import ./nix/sources.nix { };
-  pkgs = import sources.nixpkgs { };
-in pkgs.mkShell {
-  buildInputs =
-    [ (pkgs.callPackage sources.nix-script { pinnedPkgs = sources.nixpkgs; }) ];
-}
-```
-
-The package set is included in the cache key calculations, so if you change your package set your scripts will automatically be rebuilt the next time you run them.
-
-You can check which package set the runner will build from by examining the source of the `nix-script` wrapper installed on your `PATH`.
+`NIX_PATH` is included in cache key calculations, so if you change your package set your scripts will automatically be rebuilt the next time you run them.
 
 ## Climate Action
 
