@@ -11,14 +11,15 @@
         pkgs = import inputs.nixpkgs { inherit system; };
         naersk-lib = inputs.naersk.lib."${system}";
 
-        rustTarget = name: version:
+        rustTarget = { name, version, postInstall ? "" }:
           naersk-lib.buildPackage {
             inherit name;
             inherit version;
+            inherit postInstall;
 
             root = ./.;
 
-            buildInputs = [ pkgs.clippy ];
+            buildInputs = [ pkgs.clippy pkgs.makeWrapper ];
             target = [ name ];
 
             doCheck = true;
@@ -43,7 +44,10 @@
             ];
           };
 
-          nix-script = rustTarget "nix-script" "2.0.0";
+          nix-script = rustTarget {
+            name = "nix-script";
+            version = "2.0.0";
+          };
 
           nix-script-bash = pkgs.writeShellScriptBin "nix-script-bash" ''
             exec ${packages.nix-script}/bin/nix-script \
@@ -52,7 +56,20 @@
               "$@"
           '';
 
-          nix-script-haskell = rustTarget "nix-script-haskell" "2.0.0";
+          nix-script-haskell = rustTarget rec {
+            name = "nix-script-haskell";
+            version = "2.0.0";
+
+            postInstall = ''
+              # avoid trying to package the dependencies step
+              if test -f $out/bin/${name}; then
+                wrapProgram $out/bin/${name} \
+                  --prefix PATH : ${
+                    pkgs.lib.makeBinPath [ packages.nix-script ]
+                  }
+              fi
+            '';
+          };
         };
 
         defaultPackage = packages.nix-script-all;
