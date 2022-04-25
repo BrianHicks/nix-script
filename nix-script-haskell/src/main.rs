@@ -6,6 +6,22 @@ use std::process::{Command, ExitStatus};
 
 /// Does the same thing as nix-script, but specializes some options for
 /// scripts written in Haskell.
+///
+/// I pay attention to all the same #! directives as nix-script, so you can still
+/// use `#!runtimeInputs` and friends to get external dependencies. (There is no
+/// need to specify `#!build` or `#!buildInputs` with regards to GHC or packages,
+/// though; I take care of that.)
+///
+/// In addition, I pay attention to some additional directives specific to
+/// Haskell programs:
+///
+/// `#!haskellPackages` should contain a list of packages the compiling GHC
+/// instance will know about. The available set of packages depends on your
+/// Nix installation; look in `haskellPackages` on `search.nixos.org` to get a
+/// full list.
+///
+/// `#!ghcFlags` should be a string of command-line options to pass to `ghc`
+/// when compiling.
 #[derive(Debug, Parser)]
 #[clap(version, trailing_var_arg = true)]
 struct Opts {
