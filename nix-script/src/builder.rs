@@ -118,7 +118,10 @@ impl Builder {
 
         let out = std::env::var_os("NIX_PATH");
         match out {
-            Some(nix_path) => hasher.write(nix_path.as_bytes()),
+            Some(nix_path) => {
+                hasher.write(nix_path.as_bytes());
+                log::trace!("hashed NIX_PATH, hash is now {:x}", hasher.finish());
+            },
             None => log::warn!("the NIX_PATH environment variable is not set; updates to <nixpkgs> may not cause scripts to be rebuilt."),
         };
 
