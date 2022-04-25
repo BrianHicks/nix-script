@@ -116,6 +116,12 @@ impl Builder {
         directives.hash(&mut hasher);
         log::trace!("hashed directives, hash is now {:x}", hasher.finish());
 
+        let out = std::env::var_os("NIX_PATH");
+        match out {
+            Some(nix_path) => hasher.write(nix_path.as_bytes()),
+            None => log::warn!("the NIX_PATH environment variable is not set; updates to <nixpkgs> may not cause scripts to be rebuilt."),
+        };
+
         self.source
             .hash(&mut hasher)
             .context("could not hash source")?;
