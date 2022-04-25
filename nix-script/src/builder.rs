@@ -133,12 +133,13 @@ impl Builder {
         Ok(format!("{:x}", hasher.finish()))
     }
 
-    pub fn build(&mut self, cache_root: &Path, directives: &Directives) -> Result<PathBuf> {
+    pub fn build(
+        &mut self,
+        cache_root: &Path,
+        hash: &str,
+        directives: &Directives,
+    ) -> Result<PathBuf> {
         log::trace!("building");
-
-        let hash = self
-            .hash(directives)
-            .context("could not get a hash in order to isolate source for the build")?;
 
         self.source
             .isolate(cache_root, &hash)
