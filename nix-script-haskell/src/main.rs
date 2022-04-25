@@ -54,6 +54,7 @@ impl Opts {
                 .map(|ps| ps.join(" "))
                 .unwrap_or(String::default())
         );
+        log::debug!("compiler is `{}`", &compiler);
         command.arg("--build-input").arg(compiler);
 
         if self.shell {
