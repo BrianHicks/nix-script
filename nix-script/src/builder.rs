@@ -140,13 +140,13 @@ impl Builder {
         directives: &Directives,
     ) -> Result<PathBuf> {
         self.source
-            .isolate(cache_root, &hash)
+            .isolate(cache_root, hash)
             .context("could not isolate source in order to build")?;
         log::trace!("isolated source");
 
         let build_path = self
             .source
-            .derivation_path(cache_root, &hash)
+            .derivation_path(cache_root, hash)
             .context("could not determine where to run the build")?;
         log::trace!("decided to run the build in {}", build_path.display());
 
