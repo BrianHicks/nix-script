@@ -139,16 +139,16 @@ impl Builder {
         hash: &str,
         directives: &Directives,
     ) -> Result<PathBuf> {
-        log::trace!("building");
-
         self.source
             .isolate(cache_root, &hash)
             .context("could not isolate source in order to build")?;
+        log::trace!("isolated source");
 
         let build_path = self
             .source
             .derivation_path(cache_root, &hash)
             .context("could not determine where to run the build")?;
+        log::trace!("decided to run the build in {}", build_path.display());
 
         if !self.source.has_default_nix() {
             let derivation = self
