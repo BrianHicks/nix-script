@@ -6,19 +6,30 @@ This README is intended more as a reference, but I also wrote [a blog post to ex
 
 ## Installing
 
-You might have guessed this already, but you can install this package with `nix`:
+You might have guessed this already, but you can install this package with `nix`!
+
+### Installing to Your Profile
 
 ```
 nix-env -if https://github.com/BrianHicks/nix-script/archive/main.tar.gz
 ```
 
-NB: This will only install `nix-script` itself. To install e.g. `nix-script-haskell`, use:
+This project's CI also pushes Linux and macOS builds to [`nix-script.cachix.org`](https://app.cachix.org/cache/nix-script) automatically, meaning `cachix add nix-script` should set you up to compile fewer things.
 
-```
-nix-env -f https://github.com/BrianHicks/nix-script/archive/main.tar.gz -iA packages.x86_64-linux.nix-script-haskell
-```
+### Installing with Flakes
 
-This project's CI also pushes Linux and macOS builds to [`nix-script.cachix.org`](https://app.cachix.org/cache/nix-script) automatically.
+Once added as a flake, we provide these attributes in `package`:
+
+- `nix-script-all` (the default package): contains everything below
+- `nix-script`: only `nix-script`
+- `nix-script-bash`: only `nix-script-bash`, but referencing the correct `nix-script`
+- `nix-script-haskell`: only `nix-script-haskell`, but referencing the correct `nix-script`
+
+We also provide an `overlay`, which has all of these.
+
+### Installing with Niv
+
+Once added to Niv (`niv add BrianHicks/nix-script`), you should be able to `import sources.nix-script { };` and have the same things described in the flakes section above.
 
 ## Commands
 
@@ -27,14 +38,14 @@ This project's CI also pushes Linux and macOS builds to [`nix-script.cachix.org`
 The normal `nix-script` invocation is controlled using shebang lines (lines starting with `#!` by default, although you can change it to whatever you like with the `--indicator` flag.)
 Starting your file with `#!/usr/bin/env nix-script` makes these options available:
 
-| What?                                | Shebang line      | Notes                                                                             |
-|--------------------------------------|-------------------|-----------------------------------------------------------------------------------|
-| Compile the script to a binary       | `#!build`         | The command specified here must read from `SCRIPT_FILE` and write to `OUT_FILE`   |
-| Use all files in the given directory | `#!buildRoot`     | Must be a parent directory of the script                                          |
-| Specify build-time dependencies      | `#!buildInputs`   | A space-separated list of Nix expressions                                         |
-| Use an alternative interpreter       | `#!interpreter`   | Run this script with the given binary (must be in `runtimeInputs`)                |
-| Specify runtime dependencies         | `#!runtimeInputs` | This should be a space-separated list of Nix expressions.                         |
-| Access auxillary files at runtime    | `#!runtimeFiles`  | Make these files available at runtime (at the path given in `RUNTIME_FILES_ROOT`) |
+| What?                                 | Shebang line      | Notes                                                                             |
+|---------------------------------------|-------------------|-----------------------------------------------------------------------------------|
+| How to compile the script to a binary | `#!build`         | The command specified here must read from `SCRIPT_FILE` and write to `OUT_FILE`   |
+| Use all files in the given directory  | `#!buildRoot`     | Must be a parent directory of the script                                          |
+| Specify build-time dependencies       | `#!buildInputs`   | A space-separated list of Nix expressions                                         |
+| Use an alternative interpreter        | `#!interpreter`   | Run this script with the given binary (must be in `runtimeInputs`)                |
+| Specify runtime dependencies          | `#!runtimeInputs` | This should be a space-separated list of Nix expressions.                         |
+| Access auxillary files at runtime     | `#!runtimeFiles`  | Make these files available at runtime (at the path given in `RUNTIME_FILES_ROOT`) |
 
 you can also control these options with equivalent command-line flags to `nix-script` (see the `--help` output for exact names.)
 
@@ -99,23 +110,11 @@ You can get quick compilation feedback with [`ghcid`](https://github.com/ndmitch
 
 ## Controlling `nixpkgs` version
 
-By default, `nix-script` will use the version of [nixpkgs](https://github.com/nixos/nixpkgs) we use to build scripts it's installed with.
-If you want to change this, specify `pinnedPkgs` when installing `nix-script`.
-For example, if you use `niv` that might look like:
+`nix-script` will generate derivations that `import <nixpkgs> {}` by default.
+That means all you need to do to control which `nixpkgs` your scripts are built with is to set `NIX_PATH`, for example to `NIX_PATH=nixpkgs=/nix/store/HASHHASHHASH-source`.
+For projects, this is reasonably easy to do in a `mkShell` (for example by setting `NIX_PATH = "nixpkgs=${pkgs.path}"`,) or by using `makeWrapper` on `nix-script` in a custom derivation.
 
-```nix
-let
-  sources = import ./nix/sources.nix { };
-  pkgs = import sources.nixpkgs { };
-in pkgs.mkShell {
-  buildInputs =
-    [ (pkgs.callPackage sources.nix-script { pinnedPkgs = sources.nixpkgs; }) ];
-}
-```
-
-The package set is included in the cache key calculations, so if you change your package set your scripts will automatically be rebuilt the next time you run them.
-
-You can check which package set the runner will build from by examining the source of the `nix-script` wrapper installed on your `PATH`.
+`NIX_PATH` is included in cache key calculations, so if you change your package set your scripts will automatically be rebuilt the next time you run them.
 
 ## Climate Action
 
