@@ -38,14 +38,14 @@ Once added to Niv (`niv add BrianHicks/nix-script`), you should be able to `impo
 The normal `nix-script` invocation is controlled using shebang lines (lines starting with `#!` by default, although you can change it to whatever you like with the `--indicator` flag.)
 Starting your file with `#!/usr/bin/env nix-script` makes these options available:
 
-| What?                                | Shebang line      | Notes                                                                             |
-|--------------------------------------|-------------------|-----------------------------------------------------------------------------------|
-| Compile the script to a binary       | `#!build`         | The command specified here must read from `SCRIPT_FILE` and write to `OUT_FILE`   |
-| Use all files in the given directory | `#!buildRoot`     | Must be a parent directory of the script                                          |
-| Specify build-time dependencies      | `#!buildInputs`   | A space-separated list of Nix expressions                                         |
-| Use an alternative interpreter       | `#!interpreter`   | Run this script with the given binary (must be in `runtimeInputs`)                |
-| Specify runtime dependencies         | `#!runtimeInputs` | This should be a space-separated list of Nix expressions.                         |
-| Access auxillary files at runtime    | `#!runtimeFiles`  | Make these files available at runtime (at the path given in `RUNTIME_FILES_ROOT`) |
+| What?                                 | Shebang line      | Notes                                                                             |
+|---------------------------------------|-------------------|-----------------------------------------------------------------------------------|
+| How to compile the script to a binary | `#!build`         | The command specified here must read from `SCRIPT_FILE` and write to `OUT_FILE`   |
+| Use all files in the given directory  | `#!buildRoot`     | Must be a parent directory of the script                                          |
+| Specify build-time dependencies       | `#!buildInputs`   | A space-separated list of Nix expressions                                         |
+| Use an alternative interpreter        | `#!interpreter`   | Run this script with the given binary (must be in `runtimeInputs`)                |
+| Specify runtime dependencies          | `#!runtimeInputs` | This should be a space-separated list of Nix expressions.                         |
+| Access auxillary files at runtime     | `#!runtimeFiles`  | Make these files available at runtime (at the path given in `RUNTIME_FILES_ROOT`) |
 
 you can also control these options with equivalent command-line flags to `nix-script` (see the `--help` output for exact names.)
 
