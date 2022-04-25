@@ -229,7 +229,7 @@ impl Opts {
             log::debug!("hashed path does not exist; building");
 
             let out_path = builder
-                .build(&cache_directory, &directives)
+                .build(&cache_directory, &hash, &directives)
                 .context("could not build derivation from script")?;
 
             if let Err(err) = symlink(&out_path, &target) {
