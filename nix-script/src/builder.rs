@@ -350,10 +350,8 @@ impl Source {
 /// When you run a build, Nix uses the directory name as part of the calculation
 /// for the final path in the store. That means that if we have random temporary
 /// directory names like `nix-script-a4beff` we'll bust the cache every time. We
-/// can get around this by building in a subdirectory of the temporary directory,
-/// but that makes it more difficult to keep track of the real root. This data
-/// structure solves that problem by explicitly tracking both and dropping the
-/// temporary directory when the owner goes out of scope.
+/// can get around this by building in a directory name that never changes,
+/// which we can obtain with the hash!
 #[derive(Debug)]
 struct TempBuildRoot {
     dest: PathBuf,
