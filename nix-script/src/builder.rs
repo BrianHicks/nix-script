@@ -65,7 +65,7 @@ impl Builder {
     pub fn derivation(&self, directives: &Directives, for_export: bool) -> Result<Derivation> {
         let build_command = match &directives.build_command {
             Some(bc) => bc,
-            None => anyhow::bail!("Need a build command, either by specifying a `build` directive or passing the `--build` option.")
+            None => anyhow::bail!("Need a build command, either by specifying a `build` directive or passing the `--build-command` option.")
         };
 
         let root = if for_export {
