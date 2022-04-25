@@ -95,8 +95,6 @@ In addition to the regular `nix-script` options, `nix-script-haskell` lets you s
 | `#!haskellPackages` | Haskell packages to build with (you can get a list of available names by running `nix-env -qaPA nixpkgs.haskellPackages`.) | `#!haskellPackages text aeson` |
 | `#!ghcFlags`        | Additional flags to pass to the compiler.                                                                                  | `#!ghcFlags -threaded`         |
 
-Unlike other shebang options, `#!haskellPackages` does not have an equivalent setting in the environment.
-
 You can get quick compilation feedback with [`ghcid`](https://github.com/ndmitchell/ghcid) by running `nix-script-haskell --ghcid path/to/your/script.hs`.
 
 ## Controlling `nixpkgs` version
