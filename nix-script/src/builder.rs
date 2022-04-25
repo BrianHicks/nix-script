@@ -133,13 +133,17 @@ impl Builder {
     pub fn build(&mut self, cache_root: &Path, directives: &Directives) -> Result<PathBuf> {
         log::trace!("building");
 
+        let hash = self
+            .hash(&directives)
+            .context("could not get a hash in order to isolate source for the build")?;
+
         self.source
-            .isolate(cache_root)
+            .isolate(cache_root, &hash)
             .context("could not isolate source in order to build")?;
 
         let build_path = self
             .source
-            .derivation_path(cache_root)
+            .derivation_path(cache_root, &hash)
             .context("could not determine where to run the build")?;
 
         if !self.source.has_default_nix() {
@@ -192,7 +196,7 @@ impl Builder {
 #[derive(Debug)]
 enum Source {
     Script {
-        tempdir: OnceCell<TempDir>,
+        tempdir: OnceCell<TempBuildRoot>,
         script: PathBuf,
     },
     Directory {
@@ -202,7 +206,7 @@ enum Source {
         absolute_root: PathBuf,
 
         // only created if we need a place to put `default.nix`
-        tempdir: OnceCell<TempDir>,
+        tempdir: OnceCell<TempBuildRoot>,
     },
 }
 
@@ -213,7 +217,7 @@ impl Source {
                 tempdir, script, ..
             } => Ok(tempdir
                 .get()
-                .map(|tempdir| tempdir.build.as_ref())
+                .map(|tempdir| tempdir.dest.as_ref())
                 .or_else(|| script.parent())
                 .context("can't find a path to the root for this script. This is probably a bug and you should report it!")?),
             Self::Directory {
@@ -243,17 +247,26 @@ impl Source {
         }
     }
 
-    fn isolate(&mut self, cache_root: &Path) -> Result<()> {
+    fn isolate(&mut self, cache_root: &Path, hash: &str) -> Result<()> {
         match self {
             Self::Script { script, tempdir } => {
-                let target = tempdir.get_or_try_init(|| TempDir::new_in(cache_root))?;
+                let target = tempdir.get_or_try_init(|| {
+                    TempBuildRoot::new_in(
+                        cache_root,
+                        hash,
+                        script
+                            .file_name()
+                            .context("could not get a script name to determine build root")
+                            .map(|p| p.as_ref())?,
+                    )
+                })?;
 
                 log::trace!(
                     "copying build script into temporary build directory at {}",
-                    target.build.display()
+                    target.dest.display()
                 );
 
-                let script_dest = target.build.join(
+                let script_dest = target.dest.join(
                     script
                         .file_name()
                         .context("the script path did not have a file name")?,
@@ -271,20 +284,20 @@ impl Source {
         }
     }
 
-    fn derivation_path(&self, cache_root: &Path) -> Result<&PathBuf> {
+    fn derivation_path(&self, cache_root: &Path, hash: &str) -> Result<&PathBuf> {
         match self {
             Self::Script { tempdir, .. } =>
                 tempdir.get()
                     .context("I'm trying to build a script but have not created a temporary directory. This is an internal error and you should report it!")
-                    .map(|temp| &temp.build),
+                    .map(|temp| &temp.dest),
             Self::Directory { root, tempdir, .. } => if root.join("default.nix").exists() {
                 Ok(root)
             } else {
                 let target = tempdir
-                    .get_or_try_init(|| TempDir::new_in(cache_root))
+                    .get_or_try_init(|| TempBuildRoot::new_in(cache_root, hash, self.script().context("could not get script name to create a temporary directory")?))
                     .context("could not create a place to write default.nix away from the source root")?;
 
-                Ok(&target.build)
+                Ok(&target.dest)
             },
         }
     }
@@ -342,39 +355,30 @@ impl Source {
 /// structure solves that problem by explicitly tracking both and dropping the
 /// temporary directory when the owner goes out of scope.
 #[derive(Debug)]
-struct TempDir {
-    root: PathBuf,
-    build: PathBuf,
+struct TempBuildRoot {
+    dest: PathBuf,
 }
 
-impl TempDir {
-    fn new_in(root: &Path) -> Result<Self> {
+impl TempBuildRoot {
+    fn new_in(root: &Path, hash: &str, script_name: &Path) -> Result<Self> {
         log::trace!("creating temporary directory");
 
-        let root = tempfile::Builder::new()
-            .prefix("nix-script-")
-            .tempdir_in(root)
-            .context("could not create temporary directory")?
-            .into_path();
+        let dest = root.join(format!("build-{}-{}", hash, script_name.display()));
+        fs::create_dir_all(&dest).context("could not create temporary directory")?;
 
-        let build = root.join("nix-script");
-
-        fs::create_dir(&build)
-            .context("could not create build directory in temporary directory")?;
-
-        Ok(TempDir { root, build })
+        Ok(TempBuildRoot { dest })
     }
 }
 
-impl Drop for TempDir {
+impl Drop for TempBuildRoot {
     fn drop(&mut self) {
         log::trace!("attempting to remove temporary directory");
 
-        if let Err(err) = fs::remove_dir_all(&self.root) {
+        if let Err(err) = fs::remove_dir_all(&self.dest) {
             log::warn!(
                 "Got an error while removing the temporary directory at {}: {}",
-                self.root.display(),
-                err
+                self.dest.display(),
+                err,
             )
         }
     }
