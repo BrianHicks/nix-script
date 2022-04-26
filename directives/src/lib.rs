@@ -204,6 +204,10 @@ impl Hash for Directives {
         for file in &self.runtime_files {
             hasher.write(file.display().to_string().as_ref())
         }
+
+        if let Some(nixpkgs_config) = &self.nixpkgs_config {
+            hasher.write(nixpkgs_config.to_string().as_ref())
+        }
     }
 }
 
@@ -416,6 +420,22 @@ mod tests {
             assert_have_different_hashes(
                 Directives::from_directives(HashMap::from([("runtimeFiles", vec!["a"])])).unwrap(),
                 Directives::from_directives(HashMap::from([("runtimeFiles", vec!["b"])])).unwrap(),
+            )
+        }
+
+        #[test]
+        fn nixpkgs_config_changes_hash() {
+            assert_have_different_hashes(
+                Directives::from_directives(HashMap::from([(
+                    "nixpkgsConfig",
+                    vec!["{ system = \"x86_64-darwin\"; }"],
+                )]))
+                .unwrap(),
+                Directives::from_directives(HashMap::from([(
+                    "nixpkgsConfig",
+                    vec!["{ system = \"aarch64-darwin\"; }"],
+                )]))
+                .unwrap(),
             )
         }
     }
