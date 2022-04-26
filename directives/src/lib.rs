@@ -5,6 +5,7 @@ mod parser;
 use crate::expr::Expr;
 use anyhow::{Context, Result};
 use core::hash::{Hash, Hasher};
+use rnix::SyntaxKind;
 use std::collections::HashMap;
 use std::path::Path;
 use std::path::PathBuf;
@@ -17,6 +18,7 @@ pub struct Directives {
     pub interpreter: Option<String>,
     pub runtime_inputs: Vec<Expr>,
     pub runtime_files: Vec<PathBuf>,
+    pub nixpkgs_config: Option<Expr>,
     pub raw: HashMap<String, Vec<String>>,
 }
 
@@ -40,6 +42,7 @@ impl Directives {
         let interpreter = Self::once("interpreter", &fields)?.map(|s| s.to_owned());
         let runtime_inputs = Self::exprs("runtimeInputs", &fields)?;
         let runtime_files = Self::files("runtimeFiles", &fields);
+        let nixpkgs_config = Self::once_attrset("nixpkgsConfig", &fields)?;
 
         Ok(Directives {
             build_command,
@@ -48,6 +51,7 @@ impl Directives {
             interpreter,
             runtime_inputs,
             runtime_files,
+            nixpkgs_config,
             raw: fields
                 .iter()
                 .map(|(k, v)| (k.to_string(), v.iter().map(|s| s.to_string()).collect()))
@@ -66,6 +70,28 @@ impl Directives {
                 }
 
                 Ok(Some(value[0]))
+            }
+            None => Ok(None),
+        }
+    }
+
+    fn once_attrset<'field>(
+        field: &'field str,
+        fields: &HashMap<&'field str, Vec<&'field str>>,
+    ) -> Result<Option<Expr>> {
+        match Self::once(field, fields)? {
+            Some(raw_options) => {
+                let parsed = Expr::parse(raw_options)
+                    .with_context(|| format!("could not parse `{}` as a Nix expression", field))?;
+
+                match parsed.kind() {
+                    SyntaxKind::NODE_ATTR_SET => Ok(Some(parsed)),
+                    other => anyhow::bail!(
+                        "I expected the `{}` directive to be a Nix record, but it was a `{:?}`",
+                        field,
+                        other
+                    ),
+                }
             }
             None => Ok(None),
         }
@@ -272,6 +298,43 @@ mod tests {
             assert_eq!(
                 Some(&vec!["other".to_string()]),
                 directives.raw.get("other")
+            )
+        }
+
+        #[test]
+        fn only_one_nixpkgs_options_allowed() {
+            let problem =
+                Directives::from_directives(HashMap::from([("nixpkgsConfig", vec!["{}", "{}"])]))
+                    .unwrap_err();
+
+            assert_eq!(
+                String::from("I got multiple `nixpkgsConfig` directives, and I don't know which to use. Remove all but one and try again!"),
+                problem.to_string(),
+            )
+        }
+
+        #[test]
+        fn nixpkgs_options_must_be_a_attrset() {
+            let problem =
+                Directives::from_directives(HashMap::from([("nixpkgsConfig", vec!["1"])]))
+                    .unwrap_err();
+
+            assert_eq!(
+                String::from("I expected the `nixpkgsConfig` directive to be a Nix record, but it was a `NODE_LITERAL`"),
+                problem.to_string(),
+            )
+        }
+
+        #[test]
+        fn nixpkgs_options_takes_an_attrset() {
+            let options = "{ system = \"x86_64-darwin\"; }";
+            let directives =
+                Directives::from_directives(HashMap::from([("nixpkgsConfig", vec![options])]))
+                    .unwrap();
+
+            assert_eq!(
+                Some(options.to_string()),
+                directives.nixpkgs_config.map(|o| o.to_string()),
             )
         }
     }
