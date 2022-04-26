@@ -82,6 +82,7 @@ impl Builder {
                 .script()
                 .context("could not get the script name for the derivation")?,
             build_command,
+            directives.nixpkgs_config.as_ref(),
         )
         .context("could not create a Nix derivation")?;
 

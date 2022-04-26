@@ -26,16 +26,33 @@ pub struct Derivation {
 }
 
 impl Derivation {
-    pub fn new(root: &Path, src: &Path, build_command: &str) -> Result<Self> {
+    pub fn new(
+        root: &Path,
+        src: &Path,
+        build_command: &str,
+        nixpkgs_options: Option<&Expr>,
+    ) -> Result<Self> {
         log::trace!(
             "creating a new derivation with root of {} and src of {}",
             root.display(),
             src.display()
         );
 
+        let final_nixpkgs_options =
+            match nixpkgs_options {
+                // Argh! I don't love this clone but it seems to be the least
+                // unreasonable way around the fact that we don't own the
+                // expressions we're being passed.
+                Some(options) => options.clone(),
+                None => Expr::parse("{ }").context("hardcoded empty attrset did not parse successfully. This is a bug and should be reported.")?
+            };
+
         Ok(Self {
             inputs: Inputs::from(vec![
-                ("pkgs".into(), Some("import <nixpkgs> { }".into())),
+                (
+                    "pkgs".into(),
+                    Some(format!("import <nixpkgs> {}", final_nixpkgs_options)),
+                ),
                 ("makeWrapper".into(), Some("pkgs.makeWrapper".into())),
             ]),
             name: src
@@ -240,7 +257,7 @@ mod tests {
         fn empty() {
             let root = PathBuf::from("/");
             let path: PathBuf = ["path", "to", "my", "cool-script"].iter().collect();
-            let derivation = Derivation::new(&root, &path, "mv $SRC $DEST").unwrap();
+            let derivation = Derivation::new(&root, &path, "mv $SRC $DEST", None).unwrap();
 
             assert_no_errors(&derivation.to_string());
         }
@@ -249,7 +266,7 @@ mod tests {
         fn with_build_inputs() {
             let root = PathBuf::from("/");
             let path = PathBuf::from("X");
-            let mut derivation = Derivation::new(&root, &path, "mv $SRC $DEST").unwrap();
+            let mut derivation = Derivation::new(&root, &path, "mv $SRC $DEST", None).unwrap();
             derivation.add_build_inputs(vec![
                 Expr::parse("jq").unwrap(),
                 Expr::parse("bash").unwrap(),
@@ -262,7 +279,7 @@ mod tests {
         fn with_runtime_inputs() {
             let root = PathBuf::from("/");
             let path = PathBuf::from("X");
-            let mut derivation = Derivation::new(&root, &path, "mv $SRC $DEST").unwrap();
+            let mut derivation = Derivation::new(&root, &path, "mv $SRC $DEST", None).unwrap();
             derivation.add_runtime_inputs(vec![Expr::parse("jq").unwrap()]);
 
             assert_no_errors(&derivation.to_string());
@@ -272,7 +289,7 @@ mod tests {
         fn with_interpreter() {
             let root = PathBuf::from("/");
             let path = PathBuf::from("X");
-            let mut derivation = Derivation::new(&root, &path, "mv $SRC $DEST").unwrap();
+            let mut derivation = Derivation::new(&root, &path, "mv $SRC $DEST", None).unwrap();
             derivation.set_interpreter("bash").unwrap();
 
             assert_no_errors(&derivation.to_string());
