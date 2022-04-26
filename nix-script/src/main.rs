@@ -32,6 +32,9 @@ struct Opts {
     #[clap(long("build-input"))]
     build_inputs: Vec<String>,
 
+    /// Run the script by passing it to this interpreter instead of running
+    /// the compiled binary directly. The interpreter must be included via some
+    /// runtime input.
     #[clap(long("interpreter"))]
     interpreter: Option<String>,
 
