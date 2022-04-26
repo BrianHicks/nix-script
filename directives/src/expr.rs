@@ -102,7 +102,7 @@ impl FromStr for Expr {
         Ok(Self::from_node(
             rnix::parse(source)
                 .as_result()
-                .context("failed to parse the source")?
+                .context("failed to parse Nix expression")?
                 .root()
                 .inner()
                 .context("root node did not have an inner node")?,
