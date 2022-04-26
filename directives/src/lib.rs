@@ -163,6 +163,20 @@ impl Directives {
             }
         }
     }
+
+    pub fn maybe_override_nixpkgs_config(&mut self, new: Option<&Expr>) -> Result<()> {
+        if let Some(expr) = new {
+            match expr.kind() {
+                SyntaxKind::NODE_ATTR_SET => self.nixpkgs_config = Some(expr.clone()),
+                other => anyhow::bail!(
+                    "I expected the nixpkgs config to be a Nix record, but it was a `{:?}`",
+                    other,
+                ),
+            };
+        }
+
+        Ok(())
+    }
 }
 
 impl Hash for Directives {

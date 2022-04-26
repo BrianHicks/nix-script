@@ -7,6 +7,7 @@ use crate::builder::Builder;
 use anyhow::{Context, Result};
 use clap::Parser;
 use clean_path::clean_path;
+use directives::expr::Expr;
 use directives::Directives;
 use std::fs;
 use std::io::ErrorKind;
@@ -41,6 +42,10 @@ struct Opts {
     /// Add runtime inputs to those specified by the source directives.
     #[clap(long("runtime-input"))]
     runtime_inputs: Vec<String>,
+
+    /// Override the configuration that will be passed to nixpkgs on import.
+    #[clap(long("nixpkgs-config"), parse(try_from_str))]
+    nixpkgs_config: Option<Expr>,
 
     /// Instead of executing the script, parse directives from the file and
     /// print them as JSON to stdout
@@ -171,6 +176,9 @@ impl Opts {
             .merge_runtime_inputs(&self.runtime_inputs)
             .context("could not add runtime inputs provided on the command line")?;
         directives.merge_runtime_files(&self.runtime_files);
+        directives
+            .maybe_override_nixpkgs_config(self.nixpkgs_config.as_ref())
+            .context("could not set nixpkgs config provided on the command line")?;
 
         // Second place we might bail early: if we're requesting a shell instead
         // of building and running the script.
