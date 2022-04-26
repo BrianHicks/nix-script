@@ -44,7 +44,7 @@ impl Derivation {
                 // unreasonable way around the fact that we don't own the
                 // expressions we're being passed.
                 Some(options) => options.clone(),
-                None => Expr::parse("{ }").context("hardcoded empty attrset did not parse successfully. This is a bug and should be reported.")?
+                None => ("{ }").parse().context("hardcoded empty attrset did not parse successfully. This is a bug and should be reported.")?
             };
 
         Ok(Self {
@@ -250,7 +250,6 @@ mod tests {
 
     mod to_string {
         use super::*;
-        use directives::expr::Expr;
         use std::path::PathBuf;
 
         #[test]
@@ -267,10 +266,7 @@ mod tests {
             let root = PathBuf::from("/");
             let path = PathBuf::from("X");
             let mut derivation = Derivation::new(&root, &path, "mv $SRC $DEST", None).unwrap();
-            derivation.add_build_inputs(vec![
-                Expr::parse("jq").unwrap(),
-                Expr::parse("bash").unwrap(),
-            ]);
+            derivation.add_build_inputs(vec![("jq").parse().unwrap(), ("bash").parse().unwrap()]);
 
             assert_no_errors(&derivation.to_string());
         }
@@ -280,7 +276,7 @@ mod tests {
             let root = PathBuf::from("/");
             let path = PathBuf::from("X");
             let mut derivation = Derivation::new(&root, &path, "mv $SRC $DEST", None).unwrap();
-            derivation.add_runtime_inputs(vec![Expr::parse("jq").unwrap()]);
+            derivation.add_runtime_inputs(vec![("jq").parse().unwrap()]);
 
             assert_no_errors(&derivation.to_string());
         }

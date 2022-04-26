@@ -4,6 +4,7 @@ use rnix::types::{List, TypedNode, Wrapper};
 use rnix::{SyntaxKind, SyntaxNode};
 use std::cmp::Ordering;
 use std::fmt::{self, Display};
+use std::str::FromStr;
 
 #[derive(Debug, Eq, serde::Serialize, Clone)]
 pub struct Expr {
@@ -13,17 +14,6 @@ pub struct Expr {
 }
 
 impl Expr {
-    pub fn parse(source: &str) -> Result<Self> {
-        Ok(Self::from_node(
-            rnix::parse(source)
-                .as_result()
-                .context("failed to parse the source")?
-                .root()
-                .inner()
-                .context("root node did not have an inner node")?,
-        ))
-    }
-
     pub fn parse_as_list(source: &str) -> Result<Vec<Self>> {
         let root = rnix::parse(&format!("[{}]", source))
             .as_result()
@@ -105,6 +95,21 @@ impl Hash for Expr {
     }
 }
 
+impl FromStr for Expr {
+    type Err = anyhow::Error;
+
+    fn from_str(source: &str) -> Result<Self> {
+        Ok(Self::from_node(
+            rnix::parse(source)
+                .as_result()
+                .context("failed to parse the source")?
+                .root()
+                .inner()
+                .context("root node did not have an inner node")?,
+        ))
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -114,12 +119,12 @@ mod tests {
 
         #[test]
         fn equal_if_raw_is_equal() {
-            assert_eq!(Expr::parse("a").unwrap(), Expr::parse("a").unwrap())
+            assert_eq!(Expr::from_str("a").unwrap(), Expr::from_str("a").unwrap())
         }
 
         #[test]
         fn unequal_if_raw_is_unequal() {
-            assert!(Expr::parse("a").unwrap() != Expr::parse("b").unwrap())
+            assert!(Expr::from_str("a").unwrap() != Expr::from_str("b").unwrap())
         }
     }
 
@@ -128,27 +133,24 @@ mod tests {
 
         #[test]
         fn accepts_valid() {
-            assert!(Expr::parse("a").is_ok())
+            assert!(Expr::from_str("a").is_ok())
         }
 
         #[test]
         fn rejects_invalid() {
-            assert!(Expr::parse("[").is_err())
+            assert!(Expr::from_str("[").is_err())
         }
 
         #[test]
         fn unwraps_root() {
-            assert_eq!(
-                SyntaxKind::NODE_IDENT,
-                Expr::parse("a").unwrap().parsed.kind()
-            )
+            assert_eq!(SyntaxKind::NODE_IDENT, Expr::from_str("a").unwrap().kind())
         }
 
         #[test]
         fn unwraps_parens() {
             assert_eq!(
                 SyntaxKind::NODE_IDENT,
-                Expr::parse("(a)").unwrap().parsed.kind()
+                Expr::from_str("(a)").unwrap().kind()
             )
         }
 
@@ -156,7 +158,7 @@ mod tests {
         fn unwraps_all_parens() {
             assert_eq!(
                 SyntaxKind::NODE_IDENT,
-                Expr::parse("((a))").unwrap().parsed.kind()
+                Expr::from_str("((a))").unwrap().kind()
             )
         }
     }
@@ -187,13 +189,14 @@ mod tests {
 
         #[test]
         fn ident_yes() {
-            let parsed = Expr::parse("a").unwrap();
+            let parsed = Expr::from_str("a").unwrap();
             assert!(parsed.is_extractable());
         }
 
         #[test]
         fn apply_no() {
-            let parsed = Expr::parse("haskellPackages.ghcWithPackages (ps: [ ps.text ])").unwrap();
+            let parsed =
+                Expr::from_str("haskellPackages.ghcWithPackages (ps: [ ps.text ])").unwrap();
             assert!(!parsed.is_extractable());
         }
     }
@@ -203,13 +206,14 @@ mod tests {
 
         #[test]
         fn ident_no() {
-            let parsed = Expr::parse("a").unwrap();
+            let parsed = Expr::from_str("a").unwrap();
             assert!(!parsed.needs_parens_in_list());
         }
 
         #[test]
         fn apply_yes() {
-            let parsed = Expr::parse("haskellPackages.ghcWithPackages (ps: [ ps.text ])").unwrap();
+            let parsed =
+                Expr::from_str("haskellPackages.ghcWithPackages (ps: [ ps.text ])").unwrap();
             assert!(parsed.needs_parens_in_list());
         }
     }
@@ -219,7 +223,7 @@ mod tests {
 
         #[test]
         fn same_as_node() {
-            let parsed = Expr::parse("a b c").unwrap();
+            let parsed = Expr::from_str("a b c").unwrap();
             assert_eq!(parsed.to_string(), parsed.parsed.to_string());
         }
     }

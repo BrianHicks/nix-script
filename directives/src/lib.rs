@@ -9,6 +9,7 @@ use rnix::SyntaxKind;
 use std::collections::HashMap;
 use std::path::Path;
 use std::path::PathBuf;
+use std::str::FromStr;
 
 #[derive(Debug, serde::Serialize)]
 pub struct Directives {
@@ -81,7 +82,7 @@ impl Directives {
     ) -> Result<Option<Expr>> {
         match Self::once(field, fields)? {
             Some(raw_options) => {
-                let parsed = Expr::parse(raw_options)
+                let parsed = Expr::from_str(raw_options)
                     .with_context(|| format!("could not parse `{}` as a Nix expression", field))?;
 
                 match parsed.kind() {
@@ -127,7 +128,7 @@ impl Directives {
 
     pub fn merge_build_inputs(&mut self, new: &[String]) -> Result<()> {
         for item in new {
-            let parsed = Expr::parse(item).context("could not parse build input")?;
+            let parsed = (item).parse().context("could not parse build input")?;
 
             if !self.build_inputs.contains(&parsed) {
                 self.build_inputs.push(parsed)
@@ -145,7 +146,7 @@ impl Directives {
 
     pub fn merge_runtime_inputs(&mut self, new: &[String]) -> Result<()> {
         for item in new {
-            let parsed = Expr::parse(item).context("could not parse build input")?;
+            let parsed = (item).parse().context("could not parse build input")?;
 
             if !self.runtime_inputs.contains(&parsed) {
                 self.runtime_inputs.push(parsed)
@@ -217,10 +218,10 @@ mod tests {
                     .unwrap();
 
             let expected: Vec<Expr> = vec![
-                Expr::parse("a").unwrap(),
-                Expr::parse("b").unwrap(),
-                Expr::parse("c").unwrap(),
-                Expr::parse("d").unwrap(),
+                "a".parse().unwrap(),
+                "b".parse().unwrap(),
+                "c".parse().unwrap(),
+                "d".parse().unwrap(),
             ];
 
             assert_eq!(expected, directives.build_inputs);
@@ -245,10 +246,10 @@ mod tests {
                     .unwrap();
 
             let expected: Vec<Expr> = vec![
-                Expr::parse("a").unwrap(),
-                Expr::parse("b").unwrap(),
-                Expr::parse("c").unwrap(),
-                Expr::parse("d").unwrap(),
+                ("a").parse().unwrap(),
+                ("b").parse().unwrap(),
+                ("c").parse().unwrap(),
+                ("d").parse().unwrap(),
             ];
 
             assert_eq!(expected, directives.runtime_inputs);
