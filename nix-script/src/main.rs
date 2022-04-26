@@ -44,7 +44,11 @@ struct Opts {
     runtime_inputs: Vec<String>,
 
     /// Override the configuration that will be passed to nixpkgs on import.
-    #[clap(long("nixpkgs-config"), parse(try_from_str))]
+    #[clap(
+        long("nixpkgs-config"),
+        parse(try_from_str),
+        env("NIX_SCRIPT_NIXPKGS_CONFIG")
+    )]
     nixpkgs_config: Option<Expr>,
 
     /// Instead of executing the script, parse directives from the file and
