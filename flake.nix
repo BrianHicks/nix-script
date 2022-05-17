@@ -81,8 +81,8 @@
         let naersk-lib = inputs.naersk.lib."${final.system}";
         in {
           nix-script = mkNixScript prev naersk-lib;
-          nix-script-bash = mkNixScriptBash prev;
-          nix-script-haskell = mkNixScriptHaskell prev naersk-lib;
+          nix-script-bash = mkNixScriptBash final;
+          nix-script-haskell = mkNixScriptHaskell final naersk-lib;
           nix-script-all = mkNixScriptAll final;
         };
     } // inputs.flake-utils.lib.eachDefaultSystem (system:
