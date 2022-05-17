@@ -38,50 +38,48 @@
             select(.reason == "compiler-artifact" and .executable != null and .profile.test == false and .target.name == "${name}")'';
         };
 
-      mkNixScript = pkgs: naersk-lib: rustTarget {
-        name = "nix-script";
-        version = "2.0.0";
-        inherit pkgs;
-        inherit naersk-lib;
-      };
+      mkNixScript = pkgs: naersk-lib:
+        rustTarget {
+          name = "nix-script";
+          version = "2.0.0";
+          inherit pkgs;
+          inherit naersk-lib;
+        };
 
-      mkNixScriptBash = pkgs: pkgs.writeShellScriptBin "nix-script-bash" ''
-        exec ${pkgs.nix-script}/bin/nix-script \
-          --build-command 'cp $SRC $OUT' \
-          --interpreter bash \
-          "$@"
-      '';
-
-      mkNixScriptHaskell = pkgs: naersk-lib: rustTarget rec {
-        name = "nix-script-haskell";
-        version = "2.0.0";
-        inherit pkgs;
-        inherit naersk-lib;
-
-        postInstall = ''
-          # avoid trying to package the dependencies step
-          if test -f $out/bin/${name}; then
-            wrapProgram $out/bin/${name} \
-              --prefix PATH : ${
-                pkgs.lib.makeBinPath [ pkgs.nix-script ]
-              }
-          fi
+      mkNixScriptBash = pkgs:
+        pkgs.writeShellScriptBin "nix-script-bash" ''
+          exec ${pkgs.nix-script}/bin/nix-script \
+            --build-command 'cp $SRC $OUT' \
+            --interpreter bash \
+            "$@"
         '';
-      };
 
-      mkNixScriptAll = pkgs: pkgs.symlinkJoin {
-        name = "nix-script-all";
-        paths = [
-          pkgs.nix-script
-          pkgs.nix-script-haskell
-          pkgs.nix-script-bash
-        ];
-      };
-    in
-    {
+      mkNixScriptHaskell = pkgs: naersk-lib:
+        rustTarget rec {
+          name = "nix-script-haskell";
+          version = "2.0.0";
+          inherit pkgs;
+          inherit naersk-lib;
+
+          postInstall = ''
+            # avoid trying to package the dependencies step
+            if test -f $out/bin/${name}; then
+              wrapProgram $out/bin/${name} \
+                --prefix PATH : ${pkgs.lib.makeBinPath [ pkgs.nix-script ]}
+            fi
+          '';
+        };
+
+      mkNixScriptAll = pkgs:
+        pkgs.symlinkJoin {
+          name = "nix-script-all";
+          paths =
+            [ pkgs.nix-script pkgs.nix-script-haskell pkgs.nix-script-bash ];
+        };
+    in {
       overlay = final: prev:
-        let naersk-lib = inputs.naersk.lib."${final.system}"; in
-        {
+        let naersk-lib = inputs.naersk.lib."${final.system}";
+        in {
           nix-script = mkNixScript prev naersk-lib;
           nix-script-bash = mkNixScriptBash prev;
           nix-script-haskell = mkNixScriptHaskell prev naersk-lib;
@@ -92,8 +90,8 @@
         pkgs = import inputs.nixpkgs {
           inherit system;
           overlays = [ inputs.self.overlay ];
-        }; in
-      {
+        };
+      in {
         packages = {
           nix-script = pkgs.nix-script;
           nix-script-bash = pkgs.nix-script-bash;
