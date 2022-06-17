@@ -40,7 +40,7 @@ Starting your file with `#!/usr/bin/env nix-script` makes these options availabl
 
 | What?                                 | Shebang line      | Notes                                                                             |
 |---------------------------------------|-------------------|-----------------------------------------------------------------------------------|
-| How to compile the script to a binary | `#!build`         | The command specified here must read from `SCRIPT_FILE` and write to `OUT_FILE`   |
+| How to compile the script to a binary | `#!build`         | The command specified here must read from `$SRC` and write to `$OUT`              |
 | Use all files in the given directory  | `#!buildRoot`     | Must be a parent directory of the script                                          |
 | Specify build-time dependencies       | `#!buildInputs`   | A space-separated list of Nix expressions                                         |
 | Use an alternative interpreter        | `#!interpreter`   | Run this script with the given binary (must be in `runtimeInputs`)                |
