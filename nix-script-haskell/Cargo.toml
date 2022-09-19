@@ -10,7 +10,7 @@ anyhow = "1.0.65"
 clap = { version = "3.2.22", features = [ "std", "color", "suggestions", "derive", "cargo", "env" ] }
 directives = { path = "../directives" }
 log = "0.4.17"
-env_logger = "0.9.0"
+env_logger = "0.9.1"
 
 [dev-dependencies]
 assert_cmd = "2.0.4"
