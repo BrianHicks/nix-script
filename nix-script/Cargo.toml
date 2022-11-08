@@ -18,6 +18,6 @@ serde_json = "1.0.87"
 walkdir = "2.3.2"
 
 [dev-dependencies]
-assert_cmd = "2.0.5"
+assert_cmd = "2.0.6"
 rnix = "0.10.2"
 tempfile = "3.3.0"
