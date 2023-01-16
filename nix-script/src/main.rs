@@ -247,7 +247,7 @@ impl Opts {
                 .build(&cache_directory, &hash, &directives)
                 .context("could not build derivation from script")?;
 
-            if let Err(err) = symlink(&out_path, &target) {
+            if let Err(err) = symlink(out_path, &target) {
                 match err.kind() {
                     ErrorKind::AlreadyExists => {
                         // we could hypothetically detect if the link is
