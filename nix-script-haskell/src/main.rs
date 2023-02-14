@@ -132,7 +132,7 @@ fn main() {
             std::process::exit(1)
         }
         Err(err) => {
-            eprintln!("{:?}", err);
+            eprintln!("{err:?}");
             std::process::exit(1)
         }
     }

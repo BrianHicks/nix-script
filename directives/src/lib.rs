@@ -83,7 +83,7 @@ impl Directives {
         match Self::once(field, fields)? {
             Some(raw_options) => {
                 let parsed = Expr::from_str(raw_options)
-                    .with_context(|| format!("could not parse `{}` as a Nix expression", field))?;
+                    .with_context(|| format!("could not parse `{field}` as a Nix expression"))?;
 
                 match parsed.kind() {
                     SyntaxKind::NODE_ATTR_SET => Ok(Some(parsed)),

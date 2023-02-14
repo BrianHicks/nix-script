@@ -40,9 +40,9 @@ impl Display for Inputs {
                 done_with_first = true;
             }
 
-            write!(f, "{}", key)?;
+            write!(f, "{key}")?;
             if let Some(value) = default {
-                write!(f, " ? {}", value)?;
+                write!(f, " ? {value}")?;
             }
         }
 
