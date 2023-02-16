@@ -51,7 +51,7 @@ impl Derivation {
             inputs: Inputs::from(vec![
                 (
                     "pkgs".into(),
-                    Some(format!("import <nixpkgs> {}", final_nixpkgs_options)),
+                    Some(format!("import <nixpkgs> {final_nixpkgs_options}")),
                 ),
                 ("makeWrapper".into(), Some("pkgs.makeWrapper".into())),
             ]),
@@ -74,10 +74,8 @@ impl Derivation {
         for build_input in build_inputs {
             if build_input.is_extractable() {
                 log::trace!("extracting build input `{}`", build_input);
-                self.inputs.insert(
-                    build_input.to_string(),
-                    Some(format!("pkgs.{}", build_input)),
-                );
+                self.inputs
+                    .insert(build_input.to_string(), Some(format!("pkgs.{build_input}")));
             }
             self.build_inputs.insert(build_input);
         }
@@ -111,7 +109,7 @@ impl Derivation {
                 log::trace!("extracting build input `{}`", runtime_input);
                 self.inputs.insert(
                     runtime_input.to_string(),
-                    Some(format!("pkgs.{}", runtime_input)),
+                    Some(format!("pkgs.{runtime_input}")),
                 );
             }
             self.runtime_inputs.insert(runtime_input);
@@ -233,9 +231,9 @@ fn fmt_list(f: &mut fmt::Formatter<'_>, inputs: &BTreeSet<Expr>) -> Result<(), f
     write!(f, "[")?;
     for input in inputs {
         if input.needs_parens_in_list() {
-            write!(f, " ({})", input)?;
+            write!(f, " ({input})")?;
         } else {
-            write!(f, " {}", input)?;
+            write!(f, " {input}")?;
         }
     }
     write!(f, " ]")

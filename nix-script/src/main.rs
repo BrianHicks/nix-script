@@ -224,7 +224,7 @@ impl Opts {
             .hash(&directives)
             .context("could not calculate cache location for the script's compiled version")?;
 
-        let target = cache_directory.join(format!("{}-{}", hash, script_name));
+        let target = cache_directory.join(format!("{hash}-{script_name}"));
         log::trace!("cache target: {}", target.display());
 
         // before we perform the build, we need to check if the symlink target
@@ -355,7 +355,7 @@ fn main() {
             std::process::exit(1)
         }
         Err(err) => {
-            eprintln!("{:?}", err);
+            eprintln!("{err:?}");
             std::process::exit(1)
         }
     }

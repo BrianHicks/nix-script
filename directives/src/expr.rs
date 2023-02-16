@@ -15,7 +15,7 @@ pub struct Expr {
 
 impl Expr {
     pub fn parse_as_list(source: &str) -> Result<Vec<Self>> {
-        let root = rnix::parse(&format!("[{}]", source))
+        let root = rnix::parse(&format!("[{source}]"))
             .as_result()
             .context("failed to parse the source when wrapping as a list")?
             .root();
