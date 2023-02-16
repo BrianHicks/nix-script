@@ -74,10 +74,8 @@ impl Derivation {
         for build_input in build_inputs {
             if build_input.is_extractable() {
                 log::trace!("extracting build input `{}`", build_input);
-                self.inputs.insert(
-                    build_input.to_string(),
-                    Some(format!("pkgs.{build_input}")),
-                );
+                self.inputs
+                    .insert(build_input.to_string(), Some(format!("pkgs.{build_input}")));
             }
             self.build_inputs.insert(build_input);
         }
