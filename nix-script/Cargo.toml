@@ -6,7 +6,7 @@ edition = "2021"
 [dependencies]
 anyhow = "1.0.71"
 clap = { version = "3.2.23", features = [ "std", "color", "suggestions", "derive", "cargo", "env" ] }
-directories = "5.0.0"
+directories = "5.0.1"
 directives = { path = "../directives" }
 lazy_static = "1.4.0"
 log = "0.4.17"
