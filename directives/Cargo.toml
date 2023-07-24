@@ -7,4 +7,4 @@ edition = "2021"
 anyhow = "1.0.72"
 log = "0.4.19"
 rnix = "0.10.2"
-serde = { version = "1.0.174", features = [ "derive" ] }
+serde = { version = "1.0.175", features = [ "derive" ] }
