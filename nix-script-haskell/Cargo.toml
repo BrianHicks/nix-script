@@ -9,7 +9,7 @@ edition = "2021"
 anyhow = "1.0.72"
 clap = { version = "3.2.23", features = [ "std", "color", "suggestions", "derive", "cargo", "env" ] }
 directives = { path = "../directives" }
-log = "0.4.19"
+log = "0.4.20"
 env_logger = "0.10.0"
 
 [dev-dependencies]
