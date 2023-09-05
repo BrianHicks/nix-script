@@ -18,7 +18,7 @@ jobs:
         os: [ubuntu-latest, macos-11] # depending on usage, maybe add macos-10.15 too
     runs-on: "${{ matrix.os }}"
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       - uses: cachix/install-nix-action@v23
       - uses: cachix/cachix-action@v12
         with:
@@ -33,7 +33,7 @@ jobs:
     name: rustfmt
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       - uses: cachix/install-nix-action@v23
       - uses: cachix/cachix-action@v12
         with:
