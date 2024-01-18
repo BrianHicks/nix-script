@@ -157,6 +157,7 @@ impl Builder {
                 .context("could not prepare derivation to build")?;
 
             log::debug!("writing derivation to {}", build_path.display());
+            log::trace!("derivation contents: {}", derivation.to_string());
             fs::write(build_path.join("default.nix"), derivation.to_string())
                 .context("could not write derivation contents")?;
         }
