@@ -9,7 +9,7 @@ pub fn clean_path(path: &Path) -> Result<PathBuf> {
     if path.is_relative() {
         let components: Vec<Component> = path.components().collect();
 
-        match components.get(0) {
+        match components.first() {
             Some(Component::CurDir) => {
                 if components.len() == 1 {
                     Ok(PathBuf::from("./."))
