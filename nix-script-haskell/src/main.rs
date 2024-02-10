@@ -101,9 +101,7 @@ impl Opts {
         }
 
         if let Some(cmd) = self.run.as_deref() {
-            command
-                .arg("--run")
-                .arg(cmd);
+            command.arg("--run").arg(cmd);
         }
 
         if !self.runtime_input.is_empty() {
