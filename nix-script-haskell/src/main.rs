@@ -37,6 +37,10 @@ struct Opts {
     #[clap(long, requires("shell"))]
     run: Option<String>,
 
+    /// In shell mode, run this command instead of a shell.
+    #[clap(long("runtime-input"), requires("shell"))]
+    runtime_input: Vec<String>,
+
     /// In shell mode, run a "pure" shell (that is, one that isolates the
     /// shell a little more from what you have in your environment.)
     #[clap(long, requires("shell"))]
@@ -94,6 +98,19 @@ impl Opts {
                 .arg("ghcid")
                 .arg("--run")
                 .arg(format!("ghcid {}", script.display()));
+        }
+
+        if let Some(cmd) = self.run.as_deref() {
+            command
+                .arg("--run")
+                .arg(cmd);
+        }
+
+        if !self.runtime_input.is_empty() {
+            command.arg("--runtime-input");
+            for input in &self.runtime_input {
+                command.arg(input);
+            }
         }
 
         command.arg(script);
