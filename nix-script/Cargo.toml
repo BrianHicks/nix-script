@@ -20,4 +20,4 @@ walkdir = "2.4.0"
 [dev-dependencies]
 assert_cmd = "2.0.13"
 rnix = "0.10.2"
-tempfile = "3.10.0"
+tempfile = "3.10.1"
