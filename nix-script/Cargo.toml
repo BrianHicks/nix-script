@@ -4,7 +4,7 @@ version = "2.0.0"
 edition = "2021"
 
 [dependencies]
-anyhow = "1.0.81"
+anyhow = "1.0.82"
 clap = { version = "3.2.25", features = [ "std", "color", "suggestions", "derive", "cargo", "env" ] }
 directories = "5.0.1"
 directives = { path = "../directives" }
