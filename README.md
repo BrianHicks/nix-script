@@ -1,3 +1,7 @@
+# ⚠️ Unmaintained ⚠️
+
+nix-script is currently unmaintained. It requires more time than I have to give it. If you want to take over maintenance, fork it to your account and let me know so I can update the link here.
+
 # nix-script
 
 `nix-script` lets you write quick scripts in compiled languages, transparently compile and cache them, and pull in whatever dependencies you need from the Nix ecosystem.
