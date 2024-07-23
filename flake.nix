@@ -1,5 +1,8 @@
 {
   inputs = {
+    fenix.url = "github:nix-community/fenix";
+    fenix.inputs.nixpkgs.follows = "nixpkgs";
+
     flake-utils.url = "github:numtide/flake-utils";
 
     naersk.url = "github:nix-community/naersk";
@@ -11,6 +14,7 @@
   outputs =
     {
       self,
+      fenix,
       flake-utils,
       naersk,
       nixpkgs,
@@ -115,8 +119,12 @@
       let
         pkgs = import nixpkgs {
           inherit system;
-          overlays = [ self.overlay ];
+          overlays = [
+            self.overlay
+            fenix.overlays.default
+          ];
         };
+        rpkgs = fenix.packages.${system};
       in
       {
         packages = {
@@ -129,15 +137,12 @@
         defaultPackage = pkgs.nix-script-all;
 
         devShell = pkgs.mkShell {
-          NIX_PKGS = nixpkgs;
-
           packages = [
             # Rust.
-            pkgs.rustc
-            pkgs.cargo
+            rpkgs.default.toolchain
+
+            # External Cargo commands.
             pkgs.cargo-edit
-            pkgs.clippy
-            pkgs.rustPackages.rustfmt
 
             # System.
             pkgs.libiconv
