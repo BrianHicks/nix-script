@@ -24,7 +24,7 @@ jobs:
       - uses: Swatinem/rust-cache@v2
 
       - run: nix build --print-build-logs
-      - run: nix develop --command bash -c 'NIX_PATH="nixpkgs=$NIX_PKGS" cargo test'
+      - run: nix develop --command cargo test
 
   rustfmt:
     name: Format
