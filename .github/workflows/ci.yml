@@ -37,4 +37,4 @@ jobs:
           name: nix-script
           skipPush: true
 
-      - run: nix develop --command rustfmt --check $(find . -name "*.rs" -not -ipath '*target*')
+      - run: nix develop --command cabal fmt --all --check
