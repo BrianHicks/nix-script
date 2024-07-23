@@ -1,28 +1,30 @@
 {
   inputs = {
     flake-utils.url = "github:numtide/flake-utils";
+
     naersk.url = "github:nix-community/naersk";
     naersk.inputs.nixpkgs.follows = "nixpkgs";
-    nixpkgs.url = "github:NixOS/nixpkgs/nixpkgs-unstable";
 
-    flake-compat = {
-      url = "github:edolstra/flake-compat";
-      flake = false;
-    };
+    nixpkgs.url = "github:NixOS/nixpkgs/nixpkgs-unstable";
   };
 
   outputs =
-    inputs:
+    {
+      self,
+      flake-utils,
+      naersk,
+      nixpkgs,
+    }:
     let
       rustTarget =
         {
           name,
           version,
           pkgs,
-          naersk-lib,
+          naerskLib,
           postInstall ? "",
         }:
-        naersk-lib.buildPackage {
+        naerskLib.buildPackage {
           inherit name;
           inherit version;
           inherit postInstall;
@@ -50,12 +52,12 @@
         };
 
       mkNixScript =
-        pkgs: naersk-lib:
+        pkgs: naerskLib:
         rustTarget {
           name = "nix-script";
           version = "2.0.0";
           inherit pkgs;
-          inherit naersk-lib;
+          naerskLib = naerskLib;
         };
 
       mkNixScriptBash =
@@ -68,12 +70,12 @@
         '';
 
       mkNixScriptHaskell =
-        pkgs: naersk-lib:
+        pkgs: naerskLib:
         rustTarget rec {
           name = "nix-script-haskell";
           version = "2.0.0";
           inherit pkgs;
-          inherit naersk-lib;
+          inherit naerskLib;
 
           postInstall = ''
             # avoid trying to package the dependencies step
@@ -99,21 +101,21 @@
       overlay =
         final: prev:
         let
-          naersk-lib = inputs.naersk.lib."${final.system}";
+          naerskLib = naersk.lib."${final.system}";
         in
         {
-          nix-script = mkNixScript prev naersk-lib;
+          nix-script = mkNixScript prev naerskLib;
           nix-script-bash = mkNixScriptBash final;
-          nix-script-haskell = mkNixScriptHaskell final naersk-lib;
+          nix-script-haskell = mkNixScriptHaskell final naerskLib;
           nix-script-all = mkNixScriptAll final;
         };
     }
-    // inputs.flake-utils.lib.eachDefaultSystem (
+    // flake-utils.lib.eachDefaultSystem (
       system:
       let
-        pkgs = import inputs.nixpkgs {
+        pkgs = import nixpkgs {
           inherit system;
-          overlays = [ inputs.self.overlay ];
+          overlays = [ self.overlay ];
         };
       in
       {
@@ -127,7 +129,7 @@
         defaultPackage = pkgs.nix-script-all;
 
         devShell = pkgs.mkShell {
-          NIX_PKGS = inputs.nixpkgs;
+          NIX_PKGS = nixpkgs;
 
           packages = [
             # Rust.
