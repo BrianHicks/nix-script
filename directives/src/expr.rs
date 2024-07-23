@@ -110,6 +110,9 @@ impl FromStr for Expr {
     }
 }
 
+unsafe impl Send for Expr {}
+unsafe impl Sync for Expr {}
+
 #[cfg(test)]
 mod tests {
     use super::*;
