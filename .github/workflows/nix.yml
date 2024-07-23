@@ -19,7 +19,7 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          if test -z "$(git status)"; then exit 0; fi
+          if test -z "$(git status --porcelain)"; then exit 0; fi
 
           git config --global user.name "Github Actions"
           git config --global user.email "noreply@github.com"
