@@ -141,6 +141,7 @@
           packages = [
             # Rust.
             rpkgs.default.toolchain
+            rpkgs.rust-analyzer
 
             # External Cargo commands.
             pkgs.cargo-edit
