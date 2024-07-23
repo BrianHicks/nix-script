@@ -11,9 +11,17 @@
     };
   };
 
-  outputs = inputs:
+  outputs =
+    inputs:
     let
-      rustTarget = { name, version, pkgs, naersk-lib, postInstall ? "" }:
+      rustTarget =
+        {
+          name,
+          version,
+          pkgs,
+          naersk-lib,
+          postInstall ? "",
+        }:
         naersk-lib.buildPackage {
           inherit name;
           inherit version;
@@ -21,25 +29,28 @@
 
           root = ./.;
 
-          buildInputs = [ pkgs.clippy pkgs.makeWrapper ];
+          buildInputs = [
+            pkgs.clippy
+            pkgs.makeWrapper
+          ];
           target = [ name ];
 
           doCheck = true;
           checkPhase = ''
             cargo clippy -- --deny warnings
 
-            # make sure we've listed the right version here (we can't grab
+            # Make sure we've listed the right version here (we can't grab
             # it from the manifest because we use a virtual manifest for the
             # various targets.) If this test fails, fix by making the `version`
             # attribute the same as the one in `nix-script/Cargo.toml`
             grep -q -e 'version = "${version}"' ${name}/Cargo.toml
           '';
 
-          copyBinsFilter = ''
-            select(.reason == "compiler-artifact" and .executable != null and .profile.test == false and .target.name == "${name}")'';
+          copyBinsFilter = ''select(.reason == "compiler-artifact" and .executable != null and .profile.test == false and .target.name == "${name}")'';
         };
 
-      mkNixScript = pkgs: naersk-lib:
+      mkNixScript =
+        pkgs: naersk-lib:
         rustTarget {
           name = "nix-script";
           version = "2.0.0";
@@ -47,7 +58,8 @@
           inherit naersk-lib;
         };
 
-      mkNixScriptBash = pkgs:
+      mkNixScriptBash =
+        pkgs:
         pkgs.writeShellScriptBin "nix-script-bash" ''
           exec ${pkgs.nix-script}/bin/nix-script \
             --build-command 'cp $SRC $OUT' \
@@ -55,7 +67,8 @@
             "$@"
         '';
 
-      mkNixScriptHaskell = pkgs: naersk-lib:
+      mkNixScriptHaskell =
+        pkgs: naersk-lib:
         rustTarget rec {
           name = "nix-script-haskell";
           version = "2.0.0";
@@ -71,28 +84,39 @@
           '';
         };
 
-      mkNixScriptAll = pkgs:
+      mkNixScriptAll =
+        pkgs:
         pkgs.symlinkJoin {
           name = "nix-script-all";
-          paths =
-            [ pkgs.nix-script pkgs.nix-script-haskell pkgs.nix-script-bash ];
+          paths = [
+            pkgs.nix-script
+            pkgs.nix-script-haskell
+            pkgs.nix-script-bash
+          ];
         };
-    in {
-      overlay = final: prev:
-        let naersk-lib = inputs.naersk.lib."${final.system}";
-        in {
+    in
+    {
+      overlay =
+        final: prev:
+        let
+          naersk-lib = inputs.naersk.lib."${final.system}";
+        in
+        {
           nix-script = mkNixScript prev naersk-lib;
           nix-script-bash = mkNixScriptBash final;
           nix-script-haskell = mkNixScriptHaskell final naersk-lib;
           nix-script-all = mkNixScriptAll final;
         };
-    } // inputs.flake-utils.lib.eachDefaultSystem (system:
+    }
+    // inputs.flake-utils.lib.eachDefaultSystem (
+      system:
       let
         pkgs = import inputs.nixpkgs {
           inherit system;
           overlays = [ inputs.self.overlay ];
         };
-      in {
+      in
+      {
         packages = {
           nix-script = pkgs.nix-script;
           nix-script-bash = pkgs.nix-script-bash;
@@ -106,16 +130,17 @@
           NIX_PKGS = inputs.nixpkgs;
 
           packages = [
-            # rust
+            # Rust.
             pkgs.rustc
             pkgs.cargo
             pkgs.cargo-edit
             pkgs.clippy
             pkgs.rustPackages.rustfmt
 
-            # system
+            # System.
             pkgs.libiconv
           ];
         };
-      });
+      }
+    );
 }
