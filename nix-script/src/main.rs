@@ -16,7 +16,7 @@ use std::os::unix::process::ExitStatusExt;
 use std::path::{Path, PathBuf};
 use std::process::{Command, ExitStatus};
 
-// TODO: options for the rest of the directives
+// TODO: Options for the rest of the directives.
 #[derive(Debug, Parser)]
 #[clap(version, trailing_var_arg = true)]
 struct Opts {
@@ -46,18 +46,18 @@ struct Opts {
     /// Override the configuration that will be passed to nixpkgs on import.
     #[clap(
         long("nixpkgs-config"),
-        parse(try_from_str),
+        value_parser = clap::value_parser!(Expr),
         env("NIX_SCRIPT_NIXPKGS_CONFIG")
     )]
     nixpkgs_config: Option<Expr>,
 
     /// Instead of executing the script, parse directives from the file and
-    /// print them as JSON to stdout
+    /// print them as JSON to stdout.
     #[clap(long("parse"), conflicts_with_all(&["export", "shell"]))]
     parse: bool,
 
     /// Instead of executing the script, print the derivation we'd build
-    /// to stdout
+    ////to stdout.
     #[clap(long("export"), conflicts_with_all(&["parse", "shell"]))]
     export: bool,
 
@@ -80,7 +80,7 @@ struct Opts {
     #[clap(long)]
     build_root: Option<PathBuf>,
 
-    /// Include files for use at runtime (relative to the build root)
+    /// Include files for use at runtime (relative to the build root).
     #[clap(long)]
     runtime_files: Vec<PathBuf>,
 
@@ -94,7 +94,7 @@ struct Opts {
     // but there's a parsing issue in Clap (not a bug, but maybe a bug?) that
     // prevents passing args starting in -- after the script if we do that. See
     // https://github.com/clap-rs/clap/issues/1538
-    #[clap(min_values = 1, required = true)]
+    #[clap(num_args = 1.., required = true)]
     script_and_args: Vec<String>,
 }
 
