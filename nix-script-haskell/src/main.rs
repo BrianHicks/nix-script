@@ -46,7 +46,7 @@ struct Opts {
     nix_script_bin: PathBuf,
 
     /// The script and args to pass to nix-script
-    #[clap(min_values = 1, required = true)]
+    #[arg(num_args = 1.., required = true)]
     script_and_args: Vec<String>,
 }
 
