@@ -1,8 +1,9 @@
 [workspace]
+resolver =  "2"
 members = [
   "directives",
 
-  # binaries
+  # Binaries.
   "nix-script",
   "nix-script-haskell",
 ]
