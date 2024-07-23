@@ -1,6 +1,8 @@
-# ⚠️ Unmaintained ⚠️
-
-nix-script is currently unmaintained. It requires more time than I have to give it. If you want to take over maintenance, fork it to your account and let me know so I can update the link here.
+This version of `nix-script` is a fork of the [original version by Brian
+Hicks](https://github.com/BrianHicks/nix-script) which has been flagged
+unmaintained. I am fixing bugs related to the Rust ecosystem moving on, but I am
+currently not adding new functionality. Contact me, if you want to participate
+and improve `nix-script`!
 
 # nix-script
 
