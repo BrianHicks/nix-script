@@ -137,6 +137,7 @@
         defaultPackage = pkgs.nix-script-all;
 
         devShell = pkgs.mkShell {
+          NIX_PKGS = nixpkgs;
           packages = [
             # Rust.
             rpkgs.default.toolchain
