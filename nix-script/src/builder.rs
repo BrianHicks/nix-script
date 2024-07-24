@@ -112,8 +112,8 @@ impl Builder {
 
         // TODO: should we use the derivation here instead? It seems like this
         // should be equivalent (that is, it should change when the derivation
-        // does.) The cost is not huge if we have to change it, though... just
-        // a few rebuilds. It's probably fine?
+        // does). The cost is not huge if we have to change it, though... just a
+        // few rebuilds. It's probably fine?
         directives.hash(&mut hasher);
         log::trace!("hashed directives, hash is now {:x}", hasher.finish());
 
@@ -165,7 +165,9 @@ impl Builder {
         log::info!("building");
         let mut output = Command::new("nix-build")
             .arg(build_path)
-            .arg("--no-out-link") // TODO: it might be good to explicitly set `--out-link` to somewhere in the cache!
+            // TODO: It might be good to explicitly set `--out-link` to
+            // somewhere in the cache!
+            .arg("--no-out-link")
             .stdout(Stdio::piped())
             .stderr(Stdio::inherit())
             .output()
@@ -183,7 +185,7 @@ impl Builder {
             None => anyhow::bail!("nix-build was terminated by a signal"),
         }
 
-        // trim newline from the end of the output
+        // Trim newline from the end of the output.
         match output.stdout.pop() {
             Some(0x0A) => {}
             Some(other) => {
@@ -213,7 +215,7 @@ enum Source {
         root: PathBuf,
         absolute_root: PathBuf,
 
-        // only created if we need a place to put `default.nix`
+        // Only created if we need a place to put `default.nix`.
         tempdir: OnceCell<TempBuildRoot>,
     },
 }

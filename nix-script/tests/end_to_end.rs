@@ -70,7 +70,7 @@ mod io_behavior {
     fn gc_safety() {
         let temp = tempdir().unwrap();
 
-        // run once to set up the cache
+        // Run once to set up the cache.
         bin()
             .env("NIX_SCRIPT_CACHE", temp.path().display().to_string())
             .arg("tests/exit-with-code.sh")
@@ -78,7 +78,7 @@ mod io_behavior {
             .assert()
             .success();
 
-        // mess with the symlink to make it point to an invalid destination. Note
+        // Mess with the symlink to make it point to an invalid destination. Note
         // that we can't use the more ergonomic `DirEntry.path()` here because
         // it traverses symlinks.
         let mut cache_entries = std::fs::read_dir(temp.path()).unwrap();
@@ -87,7 +87,7 @@ mod io_behavior {
         std::fs::remove_file(&link).unwrap();
         symlink(PathBuf::from("garbage"), &link).unwrap();
 
-        // run the command again to make sure we handle the newly-bad link
+        // Run the command again to make sure we handle the newly-bad link.
         bin()
             .env("NIX_SCRIPT_CACHE", temp.path().display().to_string())
             .arg("tests/exit-with-code.sh")

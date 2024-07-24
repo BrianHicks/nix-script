@@ -108,7 +108,7 @@ impl Opts {
         script = clean_path(&script).context("could not clean path to script")?;
 
         if self.shell && !args.is_empty() {
-            log::warn!("you specified both `--shell` and script args. I'm going to ignore the args! Use `--run` if you want to run something in the shell immediately.");
+            log::warn!("You specified both `--shell` and script args. I am going to ignore the args! Use `--run` if you want to run something in the shell immediately.");
         }
 
         let script_name = script
@@ -141,7 +141,7 @@ impl Opts {
         if build_root.is_none()
             && (!self.runtime_files.is_empty() || !directives.runtime_files.is_empty())
         {
-            log::warn!("Requested runtime files without specifying a build root. I'm assuming it's the parent directory of the script for now, but you should set it explicitly!");
+            log::warn!("Requested runtime files without specifying a build root. I am assuming it is the parent directory of the script for now, but you should set it explicitly!");
             build_root = Some(
                 script
                     .parent()
@@ -167,7 +167,7 @@ impl Opts {
             return Ok(ExitStatus::from_raw(0));
         }
 
-        // we don't merge command-line and script directives until now because
+        // We don't merge command-line and script directives until now because
         // we shouldn't provide them in the output of `--parse` without showing
         // where each option came from. For now, we're assuming that people who
         // write wrapper scripts know what they want to pass into `nix-script`.
@@ -191,14 +191,14 @@ impl Opts {
         }
 
         // Third place we can bail early: if someone wants the generated
-        // derivation to do IFD or similar
+        // derivation to do IFD or similar.
         if self.export {
             // We check here instead of inside while isolating the script or
             // similar so we can get an early bail that doesn't create trash
             // in the system's temporary directories.
             if build_root.is_none() {
                 anyhow::bail!(
-                    "I don't have a root to refer to while exporting, so I can't isolate the script and dependencies. Specify a --build-root and try this again!"
+                    "I do not have a root to refer to while exporting, so I cannot isolate the script and dependencies. Specify a --build-root and try this again!"
                 )
             }
 
@@ -213,21 +213,21 @@ impl Opts {
 
         let cache_directory = self
             .get_cache_directory()
-            .context("couldn't get cache directory")?;
+            .context("could not get cache directory")?;
         log::debug!(
             "using `{}` as the cache directory",
             cache_directory.display()
         );
 
-        // create hash, check cache
+        // Create hash, check cache.
         let hash = builder
             .hash(&directives)
-            .context("could not calculate cache location for the script's compiled version")?;
+            .context("could not calculate cache location for the compiled versoin of the script")?;
 
         let target = cache_directory.join(format!("{hash}-{script_name}"));
         log::trace!("cache target: {}", target.display());
 
-        // before we perform the build, we need to check if the symlink target
+        // Before we perform the build, we need to check if the symlink target
         // has gone stale. This can happen when you run `nix-collect-garbage`,
         // since we don't pin the resulting derivations. We have to do things
         // in a slightly less ergonomic way in order to not follow symlinks.
@@ -250,12 +250,12 @@ impl Opts {
             if let Err(err) = symlink(out_path, &target) {
                 match err.kind() {
                     ErrorKind::AlreadyExists => {
-                        // we could hypothetically detect if the link is
+                        // We could hypothetically detect if the link is
                         // pointing to the right location, but the Nix paths
-                        // change for minor reasons that don't matter for
-                        // script execution. Instead, we just warn here and
-                        // trust our cache key to do the right thing. If we
-                        // get a collision, we do!
+                        // change for minor reasons that don't matter for script
+                        // execution. Instead, we just warn here and trust our
+                        // cache key to do the right thing. If we get a
+                        // collision, we do!
                         log::warn!("detected a parallel write to the cache");
                     }
                     _ => return Err(err).context("could not create symlink in cache"),
@@ -351,7 +351,7 @@ fn main() {
     match opts.run().map(|status| status.code()) {
         Ok(Some(code)) => std::process::exit(code),
         Ok(None) => {
-            log::warn!("we didn't receive an exit code; was the script killed with a signal?");
+            log::warn!("No exit code; was the script killed with a signal?");
             std::process::exit(1)
         }
         Err(err) => {
