@@ -8,6 +8,7 @@ anyhow = "1.0.82"
 clap = { version = "4.5.10", features = [ "std", "color", "suggestions", "derive", "cargo", "env" ] }
 directories = "5.0.1"
 directives = { path = "../directives" }
+fs2 = "0.4.3"
 lazy_static = "1.4.0"
 log = "0.4.20"
 env_logger = "0.10.2"

@@ -9,7 +9,8 @@ use clap::Parser;
 use clean_path::clean_path;
 use directives::expr::Expr;
 use directives::Directives;
-use std::fs;
+use fs2::FileExt;
+use std::fs::{self, remove_file, File};
 use std::io::ErrorKind;
 use std::os::unix::fs::symlink;
 use std::os::unix::process::ExitStatusExt;
@@ -240,6 +241,15 @@ impl Opts {
             }
         }
 
+        // Obtain lock.
+        let lock_file_name = format!("{}.lock", target.display());
+        log::debug!("creating lock file name: {:?}", lock_file_name);
+        let lock_file = File::create(lock_file_name.clone())?;
+        log::debug!("locking");
+        // TODO: Timeout and logging.
+        lock_file.lock_exclusive()?;
+        log::debug!("obtained lock");
+
         if !target.exists() {
             log::debug!("hashed path does not exist; building");
 
@@ -264,6 +274,13 @@ impl Opts {
         } else {
             log::debug!("hashed path exists; skipping build");
         }
+
+        // Release lock.
+        log::debug!("releasing lock");
+        lock_file.unlock()?;
+        drop(builder);
+        log::debug!("removing lock file {:?}", lock_file_name);
+        let _ = remove_file(lock_file_name);
 
         let mut child = Command::new(target.join("bin").join(script_name))
             .args(args)
