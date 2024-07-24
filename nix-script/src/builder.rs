@@ -25,7 +25,7 @@ lazy_static::lazy_static! {
 
 impl Builder {
     pub fn from_script(script: &Path) -> Self {
-        log::trace!("constructing Source from script");
+        log::trace!("constructing source from script");
 
         Self {
             source: Source::Script {
@@ -36,7 +36,7 @@ impl Builder {
     }
 
     pub fn from_directory(raw_root: &Path, raw_script: &Path) -> Result<Self> {
-        log::trace!("constructing Source from directory");
+        log::trace!("constructing source from directory");
         let root = clean_path(raw_root).context("could not clean path to root")?;
 
         let script = raw_script.strip_prefix(&root)
@@ -65,7 +65,7 @@ impl Builder {
     pub fn derivation(&self, directives: &Directives, for_export: bool) -> Result<Derivation> {
         let build_command = match &directives.build_command {
             Some(bc) => bc,
-            None => anyhow::bail!("Need a build command, either by specifying a `build` directive or passing the `--build-command` option.")
+            None => anyhow::bail!("need a build command, either by specifying a `build` directive or passing the `--build-command` option")
         };
 
         let root = if for_export {
@@ -73,14 +73,14 @@ impl Builder {
         } else {
             self.source
                 .root()
-                .context("could not get the root directory for the derivation")?
+                .context("could not get the root directory of the derivation")?
         };
 
         let mut derivation = Derivation::new(
             root,
             self.source
                 .script()
-                .context("could not get the script name for the derivation")?,
+                .context("could not get the script name of the derivation")?,
             build_command,
             directives.nixpkgs_config.as_ref(),
         )
@@ -123,7 +123,7 @@ impl Builder {
                 hasher.write(nix_path.as_bytes());
                 log::trace!("hashed NIX_PATH, hash is now {:x}", hasher.finish());
             },
-            None => log::warn!("the NIX_PATH environment variable is not set; updates to <nixpkgs> may not cause scripts to be rebuilt."),
+            None => log::warn!("no NIX_PATH environment variable; updates to <nixpkgs> may not trigger rebuilds of scripts"),
         };
 
         self.source
@@ -149,7 +149,7 @@ impl Builder {
             .source
             .derivation_path(cache_root, hash)
             .context("could not determine where to run the build")?;
-        log::trace!("decided to run the build in {}", build_path.display());
+        log::trace!("run the build in {}", build_path.display());
 
         if !self.source.has_default_nix() {
             let derivation = self
@@ -171,7 +171,7 @@ impl Builder {
             .output()
             .map_err(|err| match err.kind() {
                 ErrorKind::NotFound => {
-                    anyhow::anyhow!("I couldn't call nix-build because I couldn't find the nix-build binary. Is Nix installed?")
+                    anyhow::anyhow!("No nix-build binary available. Is Nix installed?")
                 }
                 _ => anyhow::anyhow!("{}", err),
             })
@@ -188,13 +188,15 @@ impl Builder {
             Some(0x0A) => {}
             Some(other) => {
                 log::debug!("stdout: {:x?} ending in {:x}", output.stdout, other);
-                anyhow::bail!("stdout didn't end in a single newline, but {:x}", other)
+                anyhow::bail!("stdout did not end in a single newline, but {:x}", other)
             }
-            None => anyhow::bail!("nix-build's stdout was empty. Was there an error building?"),
+            None => {
+                anyhow::bail!("stdout of nix-build stdout was empty. Was there a build error?")
+            }
         };
 
         Ok(PathBuf::from(std::str::from_utf8(&output.stdout).context(
-            "could not convert nix-build's path output to a string",
+            "could not convert the output path of nix-build to a string",
         )?))
     }
 }
@@ -225,7 +227,9 @@ impl Source {
                 .get()
                 .map(|tempdir| tempdir.dest.as_ref())
                 .or_else(|| script.parent())
-                .context("can't find a path to the root for this script. This is probably a bug and you should report it!")?),
+                .context(
+                    "cannot find a path to the root for this script; this is a bug; please report",
+                )?),
             Self::Directory {
                 tempdir,
                 root,
@@ -294,10 +298,10 @@ impl Source {
         match self {
             Self::Script { tempdir, .. } =>
                 tempdir.get()
-                    .context("I'm trying to build a script but have not created a temporary directory. This is an internal error and you should report it!")
+                    .context("trying to build a script but no temporary directory has been created; this is a bug; please report")
                     .map(|temp| &temp.dest),
             Self::Directory { root, tempdir, .. } => if root.join("default.nix").exists() {
-                log::info!("a default.nix exists in the build directory, so we're using that instead of creating our own");
+                log::info!("a default.nix exists in the build directory; using that instead of creating our own");
                 Ok(root)
             } else {
                 let target = tempdir
@@ -377,11 +381,11 @@ impl TempBuildRoot {
 
 impl Drop for TempBuildRoot {
     fn drop(&mut self) {
-        log::trace!("attempting to remove temporary directory");
+        log::trace!("attempting to remove temporary directory {:?}", &self.dest);
 
         if let Err(err) = fs::remove_dir_all(&self.dest) {
             log::warn!(
-                "Got an error while removing the temporary directory at {}: {}",
+                "error while removing the temporary directory at {}: {}",
                 self.dest.display(),
                 err,
             )
