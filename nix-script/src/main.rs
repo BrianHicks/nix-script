@@ -244,10 +244,13 @@ impl Opts {
         // Obtain lock.
         let lock_file_name = format!("{}.lock", target.display());
         log::debug!("creating lock file name: {:?}", lock_file_name);
-        let lock_file = File::create(lock_file_name.clone())?;
+        let lock_file =
+            File::create(lock_file_name.clone()).context("could not create lock file")?;
         log::debug!("locking");
-        // TODO: Timeout and logging.
-        lock_file.lock_exclusive()?;
+        // TODO: Obtain lock with timeout.
+        lock_file
+            .lock_exclusive()
+            .context("could not obtain lock")?;
         log::debug!("obtained lock");
 
         if !target.exists() {
@@ -277,7 +280,7 @@ impl Opts {
 
         // Release lock.
         log::debug!("releasing lock");
-        lock_file.unlock()?;
+        lock_file.unlock().context("could not release lock")?;
         drop(builder);
         log::debug!("removing lock file {:?}", lock_file_name);
         let _ = remove_file(lock_file_name);
