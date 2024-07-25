@@ -10,7 +10,8 @@ use clean_path::clean_path;
 use directives::expr::Expr;
 use directives::Directives;
 use fs2::FileExt;
-use std::fs::{self, remove_file, File};
+use std::env;
+use std::fs::{self, File};
 use std::io::ErrorKind;
 use std::os::unix::fs::symlink;
 use std::os::unix::process::ExitStatusExt;
@@ -225,7 +226,8 @@ impl Opts {
             .hash(&directives)
             .context("could not calculate cache location for the compiled versoin of the script")?;
 
-        let target = cache_directory.join(format!("{hash}-{script_name}"));
+        let target_unique_id = format!("{hash}-{script_name}");
+        let target = cache_directory.join(target_unique_id.clone());
         log::trace!("cache target: {}", target.display());
 
         // Before we perform the build, we need to check if the symlink target
@@ -241,20 +243,28 @@ impl Opts {
             }
         }
 
-        // Obtain lock.
-        let lock_file_name = format!("{}.lock", target.display());
-        log::debug!("creating lock file name: {:?}", lock_file_name);
-        let lock_file =
-            File::create(lock_file_name.clone()).context("could not create lock file")?;
-        log::debug!("locking");
-        // TODO: Obtain lock with timeout.
-        lock_file
-            .lock_exclusive()
-            .context("could not obtain lock")?;
-        log::debug!("obtained lock");
-
         if !target.exists() {
             log::debug!("hashed path does not exist; building");
+
+            // Initialize build lock.
+            //
+            // We lock the build after checking for the target. This has the
+            // advantage that all subsequent executions will not bother with
+            // creating lock files and obtaining locks. However, it has the
+            // disadvantage that we always move on to building the derivation,
+            // even when another builder has done the job for us in the
+            // meantime.
+            let lock_file_path = env::temp_dir().join(target_unique_id);
+            log::debug!("creating lock file path: {:?}", lock_file_path);
+            let lock_file =
+                File::create(lock_file_path.clone()).context("could not create lock file")?;
+            log::debug!("locking");
+            // Obtain lock.
+            // TODO: Obtain lock with timeout.
+            lock_file
+                .lock_exclusive()
+                .context("could not obtain lock")?;
+            log::debug!("obtained lock");
 
             let out_path = builder
                 .build(&cache_directory, &hash, &directives)
@@ -274,16 +284,17 @@ impl Opts {
                     _ => return Err(err).context("could not create symlink in cache"),
                 }
             }
+
+            // Make sure that we remove the temporary build directory before releasing the lock.
+            drop(builder);
+            // Release lock.
+            log::debug!("releasing lock");
+            lock_file.unlock().context("could not release lock")?;
+            // Do not remove the lock file because other tasks may still be
+            // waiting for obtaining a lock on the file.
         } else {
             log::debug!("hashed path exists; skipping build");
         }
-
-        // Release lock.
-        log::debug!("releasing lock");
-        lock_file.unlock().context("could not release lock")?;
-        drop(builder);
-        log::debug!("removing lock file {:?}", lock_file_name);
-        let _ = remove_file(lock_file_name);
 
         let mut child = Command::new(target.join("bin").join(script_name))
             .args(args)
@@ -297,7 +308,11 @@ impl Opts {
         log::trace!("parsing script and args");
         let mut script_and_args = self.script_and_args.iter();
 
-        let script = PathBuf::from(script_and_args.next().context("I need at least a script name to run, but didn't get one. This represents an internal error, and you should open a bug!")?);
+        let script = PathBuf::from(
+            script_and_args
+                .next()
+                .context("no script name; this is a bug; please report")?,
+        );
 
         Ok((script, self.script_and_args[1..].to_vec()))
     }
@@ -315,7 +330,9 @@ impl Opts {
         };
 
         if target.is_relative() {
-            target = std::env::current_dir().context("could not get the current directory to figure out an absolute path to the cache")?.join(target)
+            target = std::env::current_dir()
+                .context("no the current directory while calculating absolute path to the cache")?
+                .join(target)
         }
 
         if !target.exists() {
