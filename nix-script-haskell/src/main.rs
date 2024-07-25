@@ -4,13 +4,13 @@ use directives::Directives;
 use std::path::PathBuf;
 use std::process::{Command, ExitStatus};
 
-/// Does the same thing as nix-script, but specializes some options for
+/// `nix-script-haskell` is a wrapper around `nix-script` with options for
 /// scripts written in Haskell.
 ///
-/// I pay attention to all the same #! directives as nix-script, so you can still
-/// use `#!runtimeInputs` and friends to get external dependencies. (There is no
-/// need to specify `#!build` or `#!buildInputs` with regards to GHC or packages,
-/// though; I take care of that.)
+/// I pay attention to all the same #! directives as nix-script, so you can
+/// still use `#!runtimeInputs` and friends to get external dependencies. (There
+/// is no need to specify `#!build` or `#!buildInputs` with regards to GHC or
+/// packages, though; I take care of that.)
 ///
 /// In addition, I pay attention to some additional directives specific to
 /// Haskell programs:
@@ -59,7 +59,7 @@ impl Opts {
         let directives = Directives::from_file("#!", &script)
             .context("could not parse directives from script")?;
 
-        let mut command = Command::new(&self.nix_script_bin);
+        let mut nix_script = Command::new(&self.nix_script_bin);
 
         let build_command = format!(
             "mv $SRC $SRC.hs; ghc {} -o $OUT $SRC.hs",
@@ -70,7 +70,7 @@ impl Opts {
                 .unwrap_or_else(|| String::from(" "))
         );
         log::debug!("build command is `{}`", build_command);
-        command.arg("--build-command").arg(build_command);
+        nix_script.arg("--build-command").arg(build_command);
 
         let compiler = format!(
             "haskellPackages.ghcWithPackages (ps: with ps; [ {} ])",
@@ -81,14 +81,14 @@ impl Opts {
                 .unwrap_or_default()
         );
         log::debug!("compiler is `{}`", &compiler);
-        command.arg("--build-input").arg(compiler);
+        nix_script.arg("--build-input").arg(compiler);
 
         if self.shell {
             log::debug!("entering shell mode");
-            command.arg("--shell");
+            nix_script.arg("--shell");
         } else if self.ghcid {
             log::debug!("entering ghcid mode");
-            command
+            nix_script
                 .arg("--shell")
                 .arg("--runtime-input")
                 .arg("ghcid")
@@ -96,10 +96,10 @@ impl Opts {
                 .arg(format!("ghcid {}", script.display()));
         }
 
-        command.arg(script);
-        command.args(args);
+        nix_script.arg(script);
+        nix_script.args(args);
 
-        let mut child = command.spawn().with_context(|| {
+        let mut child = nix_script.spawn().with_context(|| {
             format!(
                 "could not call {}. Is it on the PATH?",
                 self.nix_script_bin.display()
