@@ -4,13 +4,13 @@ use directives::Directives;
 use std::path::PathBuf;
 use std::process::{Command, ExitStatus};
 
-/// Does the same thing as nix-script, but specializes some options for
+/// `nix-script-haskell` is a wrapper around `nix-script` with options for
 /// scripts written in Haskell.
 ///
-/// I pay attention to all the same #! directives as nix-script, so you can still
-/// use `#!runtimeInputs` and friends to get external dependencies. (There is no
-/// need to specify `#!build` or `#!buildInputs` with regards to GHC or packages,
-/// though; I take care of that.)
+/// I pay attention to all the same #! directives as nix-script, so you can
+/// still use `#!runtimeInputs` and friends to get external dependencies. (There
+/// is no need to specify `#!build` or `#!buildInputs` with regards to GHC or
+/// packages, though; I take care of that.)
 ///
 /// In addition, I pay attention to some additional directives specific to
 /// Haskell programs:
