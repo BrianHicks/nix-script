@@ -175,6 +175,7 @@ dependencies = [
  "anyhow",
  "log",
  "rnix",
+ "rowan",
  "serde",
 ]
 
