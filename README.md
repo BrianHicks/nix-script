@@ -1,6 +1,6 @@
 # ⚠️ Unmaintained ⚠️
 
-nix-script is currently unmaintained. It requires more time than I have to give it. If you want to take over maintenance, fork it to your account and let me know so I can update the link here.
+nix-script is no longer maintained at this repo. Check https://github.com/dschrempf/nix-script for the most up-to-date fork as of this writing, or https://github.com/BrianHicks/nix-script/forks to find others. Happy hacking!
 
 # nix-script
 
