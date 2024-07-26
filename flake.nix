@@ -139,7 +139,9 @@
             rust-analyzer
 
             # External Cargo commands.
+            cargo-audit
             cargo-edit
+            cargo-udeps
 
             # System.
             libiconv
