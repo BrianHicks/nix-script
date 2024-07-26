@@ -4,7 +4,7 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
-anyhow = "1.0.82"
-log = "0.4.20"
-rnix = "0.10.2"
-serde = { version = "1.0.199", features = [ "derive" ] }
+anyhow = "1.0.86"
+log = "0.4.22"
+rnix = "0.11.0"
+serde = { version = "1.0.204", features = [ "derive" ] }
