@@ -1,4 +1,9 @@
 {
+  nixConfig = {
+    extra-substituters = [ "https://nix-script.cachix.org" ];
+    extra-trusted-public-keys = [ "nix-script.cachix.org-1:czo3tF6XERpkDdMd6m84XjmgeHQXNeIooSt7b0560+c=" ];
+  };
+
   inputs = {
     flake-utils.url = "github:numtide/flake-utils";
     naersk.url = "github:nix-community/naersk";
