@@ -122,7 +122,7 @@ impl Directives {
 
     pub fn maybe_override_build_command(&mut self, maybe_new: &Option<String>) {
         if maybe_new.is_some() {
-            self.build_command = maybe_new.to_owned()
+            maybe_new.clone_into(&mut self.build_command)
         }
     }
 
@@ -140,7 +140,7 @@ impl Directives {
 
     pub fn maybe_override_interpreter(&mut self, maybe_new: &Option<String>) {
         if maybe_new.is_some() {
-            self.interpreter = maybe_new.to_owned()
+            maybe_new.clone_into(&mut self.interpreter)
         }
     }
 
